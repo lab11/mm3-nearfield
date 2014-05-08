@@ -29,7 +29,29 @@ namespace gr {
     class nearfield_demod_impl : public nearfield_demod
     {
      private:
-      // Nothing to declare in this block.
+	float N;
+	float threshold;
+	float SDR_sample_rate;
+	float pulse_max;
+	float pulse_min;
+	float prf_max;
+	float prf_min;
+	float sample_period;
+	float last_data;
+	float pulse_count;
+	float prf_count;
+	float sync;
+	float header;
+	float sync_prf;
+	float sync_prf2;
+	float sync_pulse;
+	float prf_win_cnt;
+	float valid_pulse;
+	float n;
+	std::vector<float> pulse_vec;
+	std::vector<float> prf_vec;
+	std::vector<float> demod_data;
+	float sav_pulse;
 
      public:
       nearfield_demod_impl();
