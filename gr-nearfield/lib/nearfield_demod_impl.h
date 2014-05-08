@@ -50,7 +50,7 @@ namespace gr {
 	float n;
 	std::vector<float> pulse_vec;
 	std::vector<float> prf_vec;
-	std::vector<float> demod_data;
+	std::vector<uint8_t> demod_data;
 	float sav_pulse;
 
      public:

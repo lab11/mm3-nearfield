@@ -76,6 +76,8 @@ nearfield_demod_impl::nearfield_demod_impl()
 	pulse_vec.clear();
 	prf_vec.clear();
 	demod_data.clear();
+
+	message_port_register_out(pmt::mp("frame_out"));
 }
 
 /*
@@ -179,6 +181,14 @@ int nearfield_demod_impl::work(int noutput_items,
 			}
 		}
 		if(n == N){                            // we've looked for all the data
+			//Push message out with packet data
+			pmt::pmt_t new_message_dict = pmt::make_dict();
+			pmt::pmt_t key = pmt::from_long((long)(0));
+			pmt::pmt_t value = pmt::init_u8vector(demod_data.size(), (const uint8_t*)&demod_data[0]);
+			new_message_dict = pmt::dict_add(new_message_dict, key, value);
+			pmt::pmt_t new_message = pmt::cons(new_message_dict, pmt::PMT_NIL);
+			message_port_pub(pmt::mp("frame_out"), new_message);
+
 			sync = 0;                        // start over looking for sync
 			prf_vec.clear();
 			pulse_vec.clear();
