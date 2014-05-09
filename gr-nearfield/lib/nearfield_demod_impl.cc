@@ -112,31 +112,35 @@ int nearfield_demod_impl::work(int noutput_items,
 		// NOT SYNCHRONIZED YET
 		if(sync < header) {
 			if(transition > 0) {           // rising pulse
-				float prf_val = prf_count*sample_period;
-				if(prf_val > prf_min && prf_val < prf_max){
-					prf_vec.push_back(prf_val);
-				} else {
-					sync = 0;                     // reset the sync counter
-					prf_vec.clear();                 // reset prf vector
-					pulse_vec.clear();               // reset pulse vector
+				// check for prf
+				if(sync >= 1){
+					float prf_val = prf_count*sample_period;
+					if(prf_val > prf_min && prf_val < prf_max){
+						prf_vec.push_back(prf_val);
+					} else {
+						sync = 0;                     // reset the sync counter
+						prf_vec.clear();                 // reset prf vector
+						pulse_vec.clear();               // reset pulse vector
+					}
 				}
 				pulse_count = 1;     
 				prf_count = 0;         
-			} else if(transition < 0) {       // falling pulse
+			} else if(transition < 0) {       // falling edge of pulse
+				// determine if pulse is valid or not
 				float pulse_val = pulse_count*sample_period;
 				if(pulse_val > pulse_min && pulse_val < pulse_max) {
+					// increment sync counter and pulse vector
 					sync = sync+1;              // valid pulse
 					pulse_vec.push_back(pulse_val);
+					pulse_count = 0;
 				} else {
-					prf_count = pulse_count;    // it was noise...not pulse - count it towards the prf
+					pulse_count = 0;
+					sync = 0;
 				}
-				pulse_count = 0;
-				prf_count = prf_count+1;
 			} else {    // no transition
 				if(rx_data == 1)
 					pulse_count = pulse_count+1;
-				else
-					prf_count = prf_count+1;
+				prf_count = prf_count+1;
 			}
 			last_data = rx_data;
 		}
