@@ -12,7 +12,7 @@ import struct
 import sys
 
 class my_top_block(gr.top_block):
-def __init__(self, options):
+   def __init__(self, options):
 	gr.top_block.__init__(self)
 
 	self.source = blocks.file_source(gr.sizeof_gr_complex, "usrp_out_5mm_125e6_150e6.dat", True)
@@ -20,11 +20,11 @@ def __init__(self, options):
 	#self.u.set_samp_rate(12.5e6)
 	#self.u.set_gain(100)
 
-	self.mag = blocks.complex_to_max_squared()
+	self.mag = blocks.complex_to_mag_squared()
 
-	self.tm_framer = nearfield.nearfield_demod_impl()
+	self.tm_framer = nearfield.nearfield_demod()
 	self.socket_pdu = blocks.socket_pdu("TCP_SERVER", "127.0.0.1", "12912", 10000)
-	self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "sdrp_pdu_in")
+	self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "pdus")
 
 	self.connect(self.source, self.mag, self.tm_framer)
 

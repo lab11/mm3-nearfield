@@ -24,12 +24,14 @@
 
 #include <gnuradio/io_signature.h>
 #include "nearfield_demod_impl.h"
+#include <numeric>
+#include <iterator>
 
 namespace gr {
 namespace nearfield {
 
 float mean(std::vector<float> in_vec){
-	float sum = std::accumulate(std::begin(in_vec), std::end(in_vec), 0.0);
+	float sum = std::accumulate(in_vec.begin(), in_vec.end(), 0.0);
 	float m = sum / in_vec.size();
 	return m;
 }
@@ -48,30 +50,30 @@ nearfield_demod_impl::nearfield_demod_impl()
 			gr::io_signature::make(0, 1, sizeof(float))) {
 
 	// variables
-	N = 5;                      % provided information
-	threshold = 0.6;            % threshold set after observing data
-	SDR_sample_rate = 12.5e6;   % sample rate of software defined radio receiver
-	pulse_max = 550e-9;         % maximum pulse width
-	pulse_min = 450e-9;         % minimum pulse width
-	prf_max = 12e-3;            % maximum pulse repetition frequency
-	prf_min = 10e-3;            % minimum pulse repetition freuqnecy
+	N = 5;                      // provided information
+	threshold = 0.6;            // threshold set after observing data
+	SDR_sample_rate = 12.5e6;   // sample rate of software defined radio receiver
+	pulse_max = 550e-9;         // maximum pulse width
+	pulse_min = 450e-9;         // minimum pulse width
+	prf_max = 12e-3;            // maximum pulse repetition frequency
+	prf_min = 10e-3;            // minimum pulse repetition freuqnecy
 	
 	// setup computations
 	sample_period = 1/SDR_sample_rate;
 	
 	// Treating this like it's streaming data so I won't use some of the 
 	// efficient Matlab functions that would speed this up.
-	last_data = 0;      % previous received data point
-	pulse_count = 0;    % length of current pulse (1s)
-	prf_count = 0;      % length of current prf (0s)
-	sync = 0;           % current consecutive sync pulses
-	header = 4;         % # sync pulses needed
-	sync_prf = 0;       % prf counter in sync part of loop
-	sync_prf2 = 0;      % prf counter in sync part of loop (prf_window)
-	sync_pulse = 0;     % pulse counter in sync part of loop
-	prf_win_cnt = 0;    % counter for window of pulses between prf_min and prf_max in sync routine
-	valid_pulse = 0;    % flag for pulse detection
-	n = 0;              % counter for N
+	last_data = 0;      // previous received data point
+	pulse_count = 0;    // length of current pulse (1s)
+	prf_count = 0;      // length of current prf (0s)
+	sync = 0;           // current consecutive sync pulses
+	header = 4;         // # sync pulses needed
+	sync_prf = 0;       // prf counter in sync part of loop
+	sync_prf2 = 0;      // prf counter in sync part of loop (prf_window)
+	sync_pulse = 0;     // pulse counter in sync part of loop
+	prf_win_cnt = 0;    // counter for window of pulses between prf_min and prf_max in sync routine
+	valid_pulse = 0;    // flag for pulse detection
+	n = 0;              // counter for N
 
 	pulse_vec.clear();
 	prf_vec.clear();
@@ -100,9 +102,9 @@ int nearfield_demod_impl::work(int noutput_items,
 		float transition;
 	
 		// STEP 1 --------------------------------------------------------------
-		if in[nn] > threshold
+		if(in[nn] > threshold){
 			rx_data = 1;
-		else
+		}else
 			rx_data = 0;
 	
 		// STEP 2 --------------------------------------------------------------
@@ -110,7 +112,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		// NOT SYNCHRONIZED YET
 		if(sync < header) {
 			if(transition > 0) {           // rising pulse
-				prf_val = prf_count*sample_period;
+				float prf_val = prf_count*sample_period;
 				if(prf_val > prf_min && prf_val < prf_max){
 					prf_vec.push_back(prf_val);
 				} else {
@@ -121,7 +123,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				pulse_count = 1;     
 				prf_count = 0;         
 			} else if(transition < 0) {       // falling pulse
-				pulse_val = pulse_count*sample_period;
+				float pulse_val = pulse_count*sample_period;
 				if(pulse_val > pulse_min && pulse_val < pulse_max) {
 					sync = sync+1;              // valid pulse
 					pulse_vec.push_back(pulse_val);
@@ -141,15 +143,15 @@ int nearfield_demod_impl::work(int noutput_items,
 		// SYNCHRONIZED
 		if(sync == header) {
 			// find average pulse width and prf
-			pulse_length = roundf(mean(pulse_vec)/sample_period);
-			prf_length = roundf(mean(prf_vec)/sample_period);
+			float pulse_length = roundf(mean(pulse_vec)/sample_period);
+			float prf_length = roundf(mean(prf_vec)/sample_period);
 			// using this, demodulate the next N bits
 			// right after last sync pulse is a prf window
-			pulse_length_min = pulse_length - 1;
-			pulse_length_max = pulse_length + 1;
-			prf_length_min = roundf(prf_length - prf_length*0.1);
-			prf_length_max = roundf(prf_length + prf_length*0.1);
-			prf_window = prf_length_max - prf_length_min;
+			float pulse_length_min = pulse_length - 1;
+			float pulse_length_max = pulse_length + 1;
+			float prf_length_min = roundf(prf_length - prf_length*0.1);
+			float prf_length_max = roundf(prf_length + prf_length*0.1);
+			float prf_window = prf_length_max - prf_length_min;
 			// advance to the edge of the prf_min window and look for a pulse
 			// anywhere in the prf_max-prf_min frame.
 			// then return to prf_length and repeat.
@@ -174,7 +176,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				sync_prf2 = 0;
 				valid_pulse = 0;             // reset
 			} else if(sync_prf2 == prf_window) {   // ran through whole prf window w/o finding pulse
-				demod_data.push_back(1);
+				demod_data.push_back(0);
 				n = n + 1;
 				sync_prf = prf_length_max - prf_length;      // don't set to 0...reset to middle of window for timing
 				sync_prf2 = 0;
@@ -189,9 +191,16 @@ int nearfield_demod_impl::work(int noutput_items,
 			pmt::pmt_t new_message = pmt::cons(new_message_dict, pmt::PMT_NIL);
 			message_port_pub(pmt::mp("frame_out"), new_message);
 
+			std::cout << "SENDING MESSAGE" << std::endl;
+			for(int ii=0; ii < demod_data.size(); ii++){
+				std::cout << (int)(demod_data[ii]) << ", ";
+			}
+			std::cout << std::endl;
+
 			sync = 0;                        // start over looking for sync
 			prf_vec.clear();
 			pulse_vec.clear();
+			demod_data.clear();
 			prf_count = 0;
 			pulse_count = 0;
 			n = 0;
