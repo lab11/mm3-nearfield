@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from gnuradio import gr, gru
+from gnuradio import gr, gru, uhd
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio.eng_option import eng_option
@@ -15,10 +15,11 @@ class my_top_block(gr.top_block):
    def __init__(self, options):
 	gr.top_block.__init__(self)
 
-	self.source = blocks.file_source(gr.sizeof_gr_complex, "usrp_out_5mm_125e6_150e6.dat", True)
-	#self.source = uhd.usrp_source(device_addr=options.args, stream_args=uhd.stream_args('fc32'))
-	#self.u.set_samp_rate(12.5e6)
-	#self.u.set_gain(100)
+	#self.source = blocks.file_source(gr.sizeof_gr_complex, "usrp_out_5mm_125e6_150e6.dat", True)
+	self.source = uhd.usrp_source(device_addr=options.args, stream_args=uhd.stream_args('fc32'))
+	self.source.set_center_freq(options.freq)
+	self.source.set_samp_rate(12.5e6)
+	self.source.set_gain(100)
 
 	self.mag = blocks.complex_to_mag_squared()
 
@@ -32,8 +33,10 @@ def main():
 	parser = OptionParser (option_class=eng_option, conflict_handler="resolve")
 	expert_grp = parser.add_option_group("Expert")
 
-        parser.add_option("-a", "--args", type="string", default="fpga=usrp_b200_dssdr.bin",
+        parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2,fpga=usrp_b200_dssdr.bin",
                           help="UHD device address args [default=%default]")
+	parser.add_option("-f", "--freq", type="float", default=915e6, help="USRP carrier frequency [default=%default]")
+	parser.add_option("-g", "--gain", type="float", default=100, help="USRP gain [default=%default]")
 
 	(options, args) = parser.parse_args ()
 	
