@@ -1,0 +1,9 @@
+modify in /etc/sysctl.conf:
+net.core.rmem_max = 50000000
+net.core.wmem_max = 1048576
+
+add the following to /etc/network/interfaces:
+audo eth0
+iface eth0 inet static
+address 192.168.10.1
+netmask 255.255.255.0

@@ -33,7 +33,7 @@ def main():
 	parser = OptionParser (option_class=eng_option, conflict_handler="resolve")
 	expert_grp = parser.add_option_group("Expert")
 
-        parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2,fpga=usrp_b200_dssdr.bin",
+        parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2",
                           help="UHD device address args [default=%default]")
 	parser.add_option("-f", "--freq", type="float", default=915e6, help="USRP carrier frequency [default=%default]")
 	parser.add_option("-g", "--gain", type="float", default=100, help="USRP gain [default=%default]")
