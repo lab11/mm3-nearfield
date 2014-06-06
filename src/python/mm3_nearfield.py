@@ -15,6 +15,11 @@ import time
 import struct
 import sys
 
+def make_normal(widget):
+   font = widget.GetFont()
+   font.SetWeight(wx.FONTWEIGHT_NORMAL)
+   widget.SetFont(font)
+
 class my_top_block(grc_wxgui.top_block_gui):
    def __init__(self, options):
 	grc_wxgui.top_block_gui.__init__(self, title="mm3 Nearfield")
@@ -126,6 +131,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 		value="",
 		label="",
 		converter=forms.str_converter(),
+		width=500
 	)
 	self.nb0.GetPage(0).Add(self.threshold_text)
 
@@ -150,13 +156,33 @@ class my_top_block(grc_wxgui.top_block_gui):
    def watchFramer(self):
 	while True:
 		time.sleep(1)
-		bit_fmt = '%.3e' % self.tm_framer.getLastObservedBitrate()
-		self.prf_text.set_value('Last Observed Bitrate: ' + bit_fmt)
-		pl_fmt = '%.3e' % self.tm_framer.getLastObservedPulseLen()
-		self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt)
-		thr_fmt = '%.3e' % self.tm_framer.getThreshold()
-		self.threshold_text.set_value('Current Threshold: ' + thr_fmt)
+		obs_bitrate = self.tm_framer.getLastObservedBitrate()
+		bit_fmt = '%.3e' % obs_bitrate
+		if (obs_bitrate < self._down_bitrate*(1-self._down_bitrate_accuracy/100)):
+			self.prf_text.set_value('Last Observed Bitrate: ' + bit_fmt + '  (TOO LOW)')
+		elif (obs_bitrate > self._down_bitrate*(1+self._down_bitrate_accuracy/100)):
+			self.prf_text.set_value('Last Observed Bitrate: ' + bit_fmt + '  (TOO HIGH)')
+		else:
+			self.prf_text.set_value('Last Observed Bitrate: ' + bit_fmt)
 
+		obs_pl = self.tm_framer.getLastObservedPulseLen()
+		pl_fmt = '%.3e' % obs_pl
+		if (obs_pl < self._pulse_len*(1-self._pulse_len_accuracy/100)):
+			self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt + '  (TOO LOW)')
+		elif (obs_pl > self._pulse_len*(1+self._pulse_len_accuracy/100)):
+			self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt + '  (TOO HIGH)')
+		else:
+			self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt)
+
+		obs_thr = self.tm_framer.getThreshold()
+		thr_fmt = '%.3e' % obs_thr
+		if (obs_thr > 0.8):
+			self.threshold_text.set_value('Current Threshold: ' + thr_fmt + '  (TOO HIGH)')
+		elif (obs_thr < 0.1):
+			self.threshold_text.set_value('Current Threshold: ' + thr_fmt + '  (TOO LOW)')
+		else:
+			self.threshold_text.set_value('Current Threshold: ' + thr_fmt)
+		
    def setDownBitrate(self,arg):
 	self._down_bitrate = float(arg)
 	self.tm_framer.setBitrate(self._down_bitrate)
@@ -205,7 +231,7 @@ def main():
 	parser.add_option("-b", "--bitrate", type="float", default=91, help="RX Bitrate [default=%default]")
 	parser.add_option("-B", "--bitrate-accuracy", type="float", default=10, help="RX Bitrate Accuracy (%) [default=%default]")
 	parser.add_option("-p", "--pulse-len", type="float", default=500e-9, help="Pulse Length [default=%default]")
-	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=100, help="Pulse Length Accuracy (%)")
+	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=80, help="Pulse Length Accuracy (%)")
 	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
 	parser.add_option("-n", "--packet-len", type="int", default=5, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
