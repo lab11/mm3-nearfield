@@ -48,8 +48,13 @@ namespace gr {
 	float prf_win_cnt;
 	float valid_pulse;
 	float n;
+	float d_pulse_len;
+	float d_pulse_len_accuracy;
+	float d_bitrate;
+	float d_bitrate_accuracy;
 	float last_prf;
 	float last_pulse;
+	float max_sample;
 	int sample_ctr;
 	std::vector<float> pulse_vec;
 	std::vector<float> prf_vec;
@@ -57,7 +62,7 @@ namespace gr {
 	float sav_pulse;
 
      public:
-      nearfield_demod_impl();
+      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len);
       ~nearfield_demod_impl();
 
       // Where all the action really happens

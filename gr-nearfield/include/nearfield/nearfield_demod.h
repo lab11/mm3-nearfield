@@ -46,7 +46,7 @@ namespace gr {
        * class. nearfield::nearfield_demod::make is the public interface for
        * creating new instances.
        */
-      static sptr make();
+      static sptr make(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len);
 
       virtual float getLastObservedBitrate() = 0;
       virtual float getLastObservedPulseLen() = 0;

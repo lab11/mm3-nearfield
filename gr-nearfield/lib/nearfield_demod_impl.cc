@@ -36,9 +36,9 @@ float mean(std::vector<float> in_vec){
 	return m;
 }
 
-nearfield_demod::sptr nearfield_demod::make() {
+nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len) {
 		return gnuradio::get_initial_sptr
-			(new nearfield_demod_impl());
+			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, pulse_len, pulse_len_accuracy, packet_len, header_len));
 	}
 
 /*
@@ -73,6 +73,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	prf_win_cnt = 0;    // counter for window of pulses between prf_min and prf_max in sync routine
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
+	max_sample = 0;
 
 	pulse_vec.clear();
 	prf_vec.clear();
@@ -104,28 +105,28 @@ void nearfield_demod_impl::setPacketLen(int packet_len_in){
 }
 
 void nearfield_demod_impl::setPulseLen(float pulse_len_in){
-	pulse_len = pulse_len_in;
-	pulse_max = pulse_len+pulse_len*pulse_len_accuracy/1e2;
-	pulse_min = pulse_len-pulse_len*pulse_len_accuracy/1e2;
+	d_pulse_len = pulse_len_in;
+	pulse_max = d_pulse_len+d_pulse_len*d_pulse_len_accuracy/1e2;
+	pulse_min = d_pulse_len-d_pulse_len*d_pulse_len_accuracy/1e2;
 }
 
 void nearfield_demod_impl::setPulseLenAccuracy(float pulse_len_accuracy_in){
-	pulse_len_accuracy = pulse_len_accuracy_in;
-	setPulseLen(pulse_len);
+	d_pulse_len_accuracy = pulse_len_accuracy_in;
+	setPulseLen(d_pulse_len);
 }
 
 void nearfield_demod_impl::setBitrate(float bitrate_in){
-	bitrate = bitrate_in;
-	prf_max = 1/bitrate+1/bitrate*bitrate_accuracy/1e2;            // maximum pulse repetition frequency
-	prf_min = 1/bitrate-1/bitrate*bitrate_accuracy/1e2;            // minimum pulse repetition freuqnecy
+	d_bitrate = bitrate_in;
+	prf_max = 1/d_bitrate+1/d_bitrate*d_bitrate_accuracy/1e2;            // maximum pulse repetition frequency
+	prf_min = 1/d_bitrate-1/d_bitrate*d_bitrate_accuracy/1e2;            // minimum pulse repetition freuqnecy
 }
 
 void nearfield_demod_impl::setBitrateAccuracy(float bitrate_accuracy_in){
-	bitrate_accuracy = bitrate_accuracy_in;
-	setBitrate(bitrate);
+	d_bitrate_accuracy = bitrate_accuracy_in;
+	setBitrate(d_bitrate);
 }
 
-float nearfield_demod_impl::setSampleRate(float sample_rate){
+void nearfield_demod_impl::setSampleRate(float sample_rate){
 	SDR_sample_rate = sample_rate;   // sample rate of software defined radio receiver
 	sample_period = 1/SDR_sample_rate;
 }
@@ -147,11 +148,14 @@ int nearfield_demod_impl::work(int noutput_items,
 		sample_ctr++;
 		if(sample_ctr > 1e6){
 			sample_ctr = 0;
-			treshold /= 1.1;
+			max_sample = 0;
+			if(max_sample < threshold/1.2)
+				threshold /= 1.1;
 		}
 	
 		// STEP 1 --------------------------------------------------------------
 		if(in[nn] > threshold){
+			max_sample = (in[nn] > max_sample) ? in[nn] : max_sample;
 			rx_data = 1;
 			sample_ctr = 0;
 		}else
