@@ -60,6 +60,8 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	setHeaderLen(header_len);
 
 	sample_ctr = 0;
+	last_prf = 0.0;
+	last_pulse = 0.0;
 	
 	// Treating this like it's streaming data so I won't use some of the 
 	// efficient Matlab functions that would speed this up.

@@ -5,16 +5,19 @@ from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio.eng_option import eng_option
 from optparse import OptionParser
+import gnuradio.gr.gr_threading as _threading
 from grc_gnuradio import wxgui as grc_wxgui
-
+from gnuradio.wxgui import form, forms
+import wx
 import nearfield
+import time
 
 import struct
 import sys
 
 class my_top_block(grc_wxgui.top_block_gui):
    def __init__(self, options):
-	grc_wxgui.top_block_gui.__init__(self)
+	grc_wxgui.top_block_gui.__init__(self, title="mm3 Nearfield RX")
 
 	self._down_bitrate = options.bitrate
 	self._down_bitrate_accuracy = options.bitrate_accuracy
@@ -108,54 +111,55 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.source.set_gain(100)
 
 	self.mag = blocks.complex_to_mag_squared()
-	self.agc = blocks.agc_ff()
 
 	self.tm_framer = nearfield.nearfield_demod(self._sample_rate, self._down_bitrate, self._down_bitrate_accuracy, self._pulse_len, self._pulse_len_accuracy, self._packet_len, self._header_len)
 	self.socket_pdu = blocks.socket_pdu("TCP_SERVER", "127.0.0.1", "12912", 10000)
 	self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "pdus")
 
-	self.connect(self.source, self.mag, self.agc, self.tm_framer)
+	self.connect(self.source, self.mag, self.tm_framer)
 
 	_threading.Thread(target=self.watchBitrate).start()
 	_threading.Thread(target=self.watchPulseLen).start()
 
-    def watchBitrate(self):
+   def watchBitrate(self):
 	while True:
 		time.sleep(1)
-		self.prf_text.set_value('Last Observed Bitrate: ' + self.tm_framer.getLastObservedBitrate())
+		bit_fmt = '%.3e' % self.tm_framer.getLastObservedBitrate()
+		self.prf_text.set_value('Last Observed Bitrate: ' + bit_fmt)
 
-    def watchPulseLen(self):
+   def watchPulseLen(self):
 	while True:
 		time.sleep(1)
-		self.pulse_len_text.set_value('Last Observed Pulse Length: ' + self.tm_framer.getLastObservedPulseLen())
+		pl_fmt = '%.3e' % self.tm_framer.getLastObservedPulseLen()
+		self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt)
 
-    def setDownBitrate(self,arg):
+   def setDownBitrate(self,arg):
 	self._down_bitrate = float(arg)
 	self.tm_framer.setBitrate(self._down_bitrate)
 
-    def setDownBitrateAccuracy(self,arg):
+   def setDownBitrateAccuracy(self,arg):
 	self._down_bitrate_accuracy = float(arg)
 	self.tm_framer.setBitrateAccuracy(self._down_bitrate_accuracy)
 
-    def setPulseLen(self,arg):
+   def setPulseLen(self,arg):
 	self._pulse_len = float(arg)
 	self.tm_framer.setPulseLen(self._pulse_len)
 
-    def setPulseLenAccuracy(self,arg):
+   def setPulseLenAccuracy(self,arg):
 	self._pulse_len_accuracy = float(arg)
 	self.tm_framer.setPulseLenAccuracy(self._pulse_len_accuracy)
 
-    def setHeaderLen(self,arg):
+   def setHeaderLen(self,arg):
 	self._header_len = int(arg)
 	self.tm_framer.setHeaderLen(self._header_len)
 
-    def setPacketLen(self,arg):
+   def setPacketLen(self,arg):
 	self._packet_len = int(arg)
 	self.tm_framer.setPacketLen(self._packet_len)
 
-    def setDownSampleRate(self,arg):
+   def setDownSampleRate(self,arg):
 	self._sample_rate = float(arg)
-	self.source.set_samp_rate(self._sample_rate
+	self.source.set_samp_rate(self._sample_rate)
 	self.tm_framer.setSampleRate(self._sample_rate)
 
 def main():
@@ -187,8 +191,8 @@ def main():
 	if r != gr.RT_OK:
 		print "Warning: Failed to enable realtime scheduling."
 
-	tb.start()        # start flow graph
-	tb.wait()         # wait for it to finish
+	tb.Start(True)        # start flow graph
+	tb.Wait()         # wait for it to finish
 
 if __name__ == '__main__':
 	try:
