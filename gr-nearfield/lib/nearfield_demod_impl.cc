@@ -201,7 +201,8 @@ int nearfield_demod_impl::work(int noutput_items,
 					sync = 0;
 				}
 				//Update last_pulse for every header bit
-				last_pulse = pulse_val;
+				if(pulse_count > 1)
+					last_pulse = pulse_val;
 			} else {    // no transition
 				if(rx_data == 1)
 					pulse_count = pulse_count+1;
