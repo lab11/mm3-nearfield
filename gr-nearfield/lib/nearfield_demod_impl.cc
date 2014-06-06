@@ -44,22 +44,22 @@ nearfield_demod::sptr nearfield_demod::make() {
 /*
  * The private constructor
  */
-nearfield_demod_impl::nearfield_demod_impl()
+nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len)
 	: gr::sync_block("nearfield_demod",
 			gr::io_signature::make(1, 1, sizeof(float)),
 			gr::io_signature::make(0, 1, sizeof(float))) {
 
 	// variables
-	N = 5;                      // provided information
-	threshold = 0.6;            // threshold set after observing data
-	SDR_sample_rate = 12.5e6;   // sample rate of software defined radio receiver
-	pulse_max = 550e-9;         // maximum pulse width
-	pulse_min = 450e-9;         // minimum pulse width
-	prf_max = 12e-3;            // maximum pulse repetition frequency
-	prf_min = 10e-3;            // minimum pulse repetition freuqnecy
-	
-	// setup computations
-	sample_period = 1/SDR_sample_rate;
+	threshold = 0.5;            // threshold set after observing data
+	setSampleRate(sample_rate);
+	setPulseLen(pulse_len);
+	setPulseLenAccuracy(pulse_len_accuracy);
+	setBitrate(bitrate);
+	setBitrateAccuracy(bitrate_accuracy);
+	setPacketLen(packet_len);
+	setHeaderLen(header_len);
+
+	sample_ctr = 0;
 	
 	// Treating this like it's streaming data so I won't use some of the 
 	// efficient Matlab functions that would speed this up.
@@ -67,7 +67,6 @@ nearfield_demod_impl::nearfield_demod_impl()
 	pulse_count = 0;    // length of current pulse (1s)
 	prf_count = 0;      // length of current prf (0s)
 	sync = 0;           // current consecutive sync pulses
-	header = 4;         // # sync pulses needed
 	sync_prf = 0;       // prf counter in sync part of loop
 	sync_prf2 = 0;      // prf counter in sync part of loop (prf_window)
 	sync_pulse = 0;     // pulse counter in sync part of loop
@@ -88,6 +87,49 @@ nearfield_demod_impl::nearfield_demod_impl()
 nearfield_demod_impl::~nearfield_demod_impl() {
 }
 
+float nearfield_demod_impl::getLastObservedBitrate(){
+	return last_prf;
+}
+
+float nearfield_demod_impl::getLastObservedPulseLen(){
+	return last_pulse;
+}
+
+void nearfield_demod_impl::setHeaderLen(int header_len_in){
+	header = header_len_in;
+}
+
+void nearfield_demod_impl::setPacketLen(int packet_len_in){
+	N = packet_len_in;
+}
+
+void nearfield_demod_impl::setPulseLen(float pulse_len_in){
+	pulse_len = pulse_len_in;
+	pulse_max = pulse_len+pulse_len*pulse_len_accuracy/1e2;
+	pulse_min = pulse_len-pulse_len*pulse_len_accuracy/1e2;
+}
+
+void nearfield_demod_impl::setPulseLenAccuracy(float pulse_len_accuracy_in){
+	pulse_len_accuracy = pulse_len_accuracy_in;
+	setPulseLen(pulse_len);
+}
+
+void nearfield_demod_impl::setBitrate(float bitrate_in){
+	bitrate = bitrate_in;
+	prf_max = 1/bitrate+1/bitrate*bitrate_accuracy/1e2;            // maximum pulse repetition frequency
+	prf_min = 1/bitrate-1/bitrate*bitrate_accuracy/1e2;            // minimum pulse repetition freuqnecy
+}
+
+void nearfield_demod_impl::setBitrateAccuracy(float bitrate_accuracy_in){
+	bitrate_accuracy = bitrate_accuracy_in;
+	setBitrate(bitrate);
+}
+
+float nearfield_demod_impl::setSampleRate(float sample_rate){
+	SDR_sample_rate = sample_rate;   // sample rate of software defined radio receiver
+	sample_period = 1/SDR_sample_rate;
+}
+
 int nearfield_demod_impl::work(int noutput_items,
 		gr_vector_const_void_star &input_items,
 		gr_vector_void_star &output_items) {
@@ -100,10 +142,18 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Local non-persistent variables
 		float rx_data;
 		float transition;
+
+		//Update sample counter for AGC logic
+		sample_ctr++;
+		if(sample_ctr > 1e6){
+			sample_ctr = 0;
+			treshold /= 1.1;
+		}
 	
 		// STEP 1 --------------------------------------------------------------
 		if(in[nn] > threshold){
 			rx_data = 1;
+			sample_ctr = 0;
 		}else
 			rx_data = 0;
 	
@@ -121,7 +171,10 @@ int nearfield_demod_impl::work(int noutput_items,
 						sync = 0;                     // reset the sync counter
 						prf_vec.clear();                 // reset prf vector
 						pulse_vec.clear();               // reset pulse vector
+						threshold *= 1.1;             // increment threshold since we're probably picking up noise
 					}
+					//Update last_prf for every header bit
+					last_prf = prf_val;
 				}
 				pulse_count = 1;     
 				prf_count = 0;         
@@ -137,6 +190,8 @@ int nearfield_demod_impl::work(int noutput_items,
 					pulse_count = 0;
 					sync = 0;
 				}
+				//Update last_pulse for every header bit
+				last_pulse = pulse_val;
 			} else {    // no transition
 				if(rx_data == 1)
 					pulse_count = pulse_count+1;

@@ -48,6 +48,9 @@ namespace gr {
 	float prf_win_cnt;
 	float valid_pulse;
 	float n;
+	float last_prf;
+	float last_pulse;
+	int sample_ctr;
 	std::vector<float> pulse_vec;
 	std::vector<float> prf_vec;
 	std::vector<uint8_t> demod_data;
@@ -61,6 +64,16 @@ namespace gr {
       int work(int noutput_items,
 	       gr_vector_const_void_star &input_items,
 	       gr_vector_void_star &output_items);
+
+      float getLastObservedBitrate();
+      float getLastObservedPulseLen();
+      void setPulseLen(float pulse_len_in);
+      void setPulseLenAccuracy(float pulse_len_accuracy_in);
+      void setBitrate(float bitrate_in);
+      void setBitrateAccuracy(float bitrate_accuracy_in);
+      void setSampleRate(float sample_rate_in);
+      void setPacketLen(int packet_len_in);
+      void setHeaderLen(int header_len_in);
     };
 
   } // namespace nearfield
