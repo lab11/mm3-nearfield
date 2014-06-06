@@ -17,8 +17,9 @@ import sys
 
 class my_top_block(grc_wxgui.top_block_gui):
    def __init__(self, options):
-	grc_wxgui.top_block_gui.__init__(self, title="mm3 Nearfield RX")
+	grc_wxgui.top_block_gui.__init__(self, title="mm3 Nearfield")
 
+	self._down_freq = options.freq
 	self._down_bitrate = options.bitrate
 	self._down_bitrate_accuracy = options.bitrate_accuracy
 	self._pulse_len = options.pulse_len
@@ -32,6 +33,14 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.nb0 = wx.Notebook(self.GetWin(), style=wx.NB_TOP)
 	self.nb0.AddPage(grc_wxgui.Panel(self.nb0), "RX")
 	self.Add(self.nb0)
+	self._carrier_text_box = forms.text_box(
+		parent=self.nb0.GetPage(0).GetWin(),
+		value=self._down_freq,
+		callback=self.setDownFreq,
+		label="Carrier Frequency",
+		converter=forms.float_converter(),
+	)
+	self.nb0.GetPage(0).Add(self._carrier_text_box)
 	self._bitrate_text_box = forms.text_box(
 		parent=self.nb0.GetPage(0).GetWin(),
 		value=self._down_bitrate,
@@ -136,6 +145,10 @@ class my_top_block(grc_wxgui.top_block_gui):
    def setDownBitrate(self,arg):
 	self._down_bitrate = float(arg)
 	self.tm_framer.setBitrate(self._down_bitrate)
+
+   def setDownFreq(self,arg):
+	self._down_freq = float(arg)
+	self.source.set_center_freq(self._down_freq)
 
    def setDownBitrateAccuracy(self,arg):
 	self._down_bitrate_accuracy = float(arg)
