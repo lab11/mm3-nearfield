@@ -72,6 +72,7 @@ namespace gr {
 
       float getLastObservedBitrate();
       float getLastObservedPulseLen();
+      float getThreshold();
       void setPulseLen(float pulse_len_in);
       void setPulseLenAccuracy(float pulse_len_accuracy_in);
       void setBitrate(float bitrate_in);

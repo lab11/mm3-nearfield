@@ -50,6 +50,7 @@ namespace gr {
 
       virtual float getLastObservedBitrate() = 0;
       virtual float getLastObservedPulseLen() = 0;
+      virtual float getThreshold() = 0;
       virtual void setPulseLen(float pulse_len_in) = 0;
       virtual void setPulseLenAccuracy(float pulse_len_accuracy_in) = 0;
       virtual void setBitrate(float bitrate_in) = 0;

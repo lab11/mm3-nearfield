@@ -19,6 +19,7 @@ class my_top_block(grc_wxgui.top_block_gui):
    def __init__(self, options):
 	grc_wxgui.top_block_gui.__init__(self, title="mm3 Nearfield")
 
+	self._down_gain = options.gain
 	self._down_freq = options.freq
 	self._down_bitrate = options.bitrate
 	self._down_bitrate_accuracy = options.bitrate_accuracy
@@ -41,6 +42,14 @@ class my_top_block(grc_wxgui.top_block_gui):
 		converter=forms.float_converter(),
 	)
 	self.nb0.GetPage(0).Add(self._carrier_text_box)
+	self._gain_text_box = forms.text_box(
+		parent=self.nb0.GetPage(0).GetWin(),
+		value=self._down_gain,
+		callback=self.setDownGain,
+		label="Baseband Gain",
+		converter=forms.float_converter(),
+	)
+	self.nb0.GetPage(0).Add(self._gain_text_box)
 	self._bitrate_text_box = forms.text_box(
 		parent=self.nb0.GetPage(0).GetWin(),
 		value=self._down_bitrate,
@@ -112,12 +121,19 @@ class my_top_block(grc_wxgui.top_block_gui):
 		converter=forms.str_converter(),
 	)
 	self.nb0.GetPage(0).Add(self.pulse_len_text)
+	self.threshold_text = forms.static_text(
+		parent=self.nb0.GetPage(0).GetWin(),
+		value="",
+		label="",
+		converter=forms.str_converter(),
+	)
+	self.nb0.GetPage(0).Add(self.threshold_text)
 
 	#self.source = blocks.file_source(gr.sizeof_gr_complex, "usrp_out_5mm_125e6_150e6.dat", True)
 	self.source = uhd.usrp_source(device_addr=options.args, stream_args=uhd.stream_args('fc32'))
 	self.source.set_center_freq(options.freq)
 	self.source.set_samp_rate(self._sample_rate)
-	self.source.set_gain(100)
+	self.source.set_gain(self._down_gain)
 
 	self.mag = blocks.complex_to_mag_squared()
 
@@ -127,20 +143,17 @@ class my_top_block(grc_wxgui.top_block_gui):
 
 	self.connect(self.source, self.mag, self.tm_framer)
 
-	_threading.Thread(target=self.watchBitrate).start()
-	_threading.Thread(target=self.watchPulseLen).start()
+	_threading.Thread(target=self.watchFramer).start()
 
-   def watchBitrate(self):
+   def watchFramer(self):
 	while True:
 		time.sleep(1)
 		bit_fmt = '%.3e' % self.tm_framer.getLastObservedBitrate()
 		self.prf_text.set_value('Last Observed Bitrate: ' + bit_fmt)
-
-   def watchPulseLen(self):
-	while True:
-		time.sleep(1)
 		pl_fmt = '%.3e' % self.tm_framer.getLastObservedPulseLen()
 		self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt)
+		thr_fmt = '%.3e' % self.tm_framer.getThreshold()
+		self.threshold_text.set_value('Current Threshold: ' + thr_fmt)
 
    def setDownBitrate(self,arg):
 	self._down_bitrate = float(arg)
@@ -149,6 +162,10 @@ class my_top_block(grc_wxgui.top_block_gui):
    def setDownFreq(self,arg):
 	self._down_freq = float(arg)
 	self.source.set_center_freq(self._down_freq)
+
+   def setDownGain(self,arg):
+	self._down_gain = float(arg)
+	self.source.set_gain(self._down_gain)
 
    def setDownBitrateAccuracy(self,arg):
 	self._down_bitrate_accuracy = float(arg)

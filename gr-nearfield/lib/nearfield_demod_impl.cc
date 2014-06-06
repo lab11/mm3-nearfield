@@ -98,6 +98,10 @@ float nearfield_demod_impl::getLastObservedPulseLen(){
 	return last_pulse;
 }
 
+float nearfield_demod_impl::getThreshold(){
+	return threshold;
+}
+
 void nearfield_demod_impl::setHeaderLen(int header_len_in){
 	header = header_len_in;
 }
