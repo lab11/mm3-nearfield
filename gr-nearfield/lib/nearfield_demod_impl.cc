@@ -91,7 +91,7 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 }
 
 float nearfield_demod_impl::getLastObservedBitrate(){
-	return last_prf;
+	return 1.0/last_prf;
 }
 
 float nearfield_demod_impl::getLastObservedPulseLen(){
@@ -191,6 +191,9 @@ int nearfield_demod_impl::work(int noutput_items,
 			} else if(transition < 0) {       // falling edge of pulse
 				// determine if pulse is valid or not
 				float pulse_val = pulse_count*sample_period;
+				//Update last_pulse for every header bit
+				if(pulse_count > 1)
+					last_pulse = pulse_val;
 				if(pulse_val > pulse_min && pulse_val < pulse_max) {
 					// increment sync counter and pulse vector
 					sync = sync+1;              // valid pulse
@@ -200,9 +203,6 @@ int nearfield_demod_impl::work(int noutput_items,
 					pulse_count = 0;
 					sync = 0;
 				}
-				//Update last_pulse for every header bit
-				if(pulse_count > 1)
-					last_pulse = pulse_val;
 			} else {    // no transition
 				if(rx_data == 1)
 					pulse_count = pulse_count+1;
