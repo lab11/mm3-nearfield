@@ -22,6 +22,7 @@
 #define INCLUDED_NEARFIELD_NEARFIELD_DEMOD_IMPL_H
 
 #include <nearfield/nearfield_demod.h>
+#include <fstream>
 
 namespace gr {
   namespace nearfield {
@@ -60,6 +61,7 @@ namespace gr {
 	std::vector<float> prf_vec;
 	std::vector<uint8_t> demod_data;
 	float sav_pulse;
+	std::ofstream d_log_file;
 
      public:
       nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len);

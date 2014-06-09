@@ -47,7 +47,8 @@ nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, fl
 nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len)
 	: gr::sync_block("nearfield_demod",
 			gr::io_signature::make(1, 1, sizeof(float)),
-			gr::io_signature::make(0, 1, sizeof(float))) {
+			gr::io_signature::make(0, 1, sizeof(float))),
+	  d_log_file("nearfield_log.txt") {
 
 	// variables
 	threshold = 0.5;            // threshold set after observing data
@@ -88,6 +89,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
  * Our virtual destructor.
  */
 nearfield_demod_impl::~nearfield_demod_impl() {
+	d_log_file.close();
 }
 
 float nearfield_demod_impl::getLastObservedBitrate(){
@@ -264,7 +266,9 @@ int nearfield_demod_impl::work(int noutput_items,
 			std::cout << "SENDING MESSAGE" << std::endl;
 			for(int ii=0; ii < demod_data.size(); ii++){
 				std::cout << (int)(demod_data[ii]) << ", ";
+				d_log_file << (int)(demod_data[ii]);
 			}
+			d_log_file << std::endl;
 			std::cout << std::endl;
 
 			sync = 0;                        // start over looking for sync

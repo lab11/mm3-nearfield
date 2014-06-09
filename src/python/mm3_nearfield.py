@@ -135,13 +135,19 @@ class my_top_block(grc_wxgui.top_block_gui):
 	)
 	self.nb0.GetPage(0).Add(self.threshold_text)
 
-	#self.source2 = blocks.file_source(gr.sizeof_gr_complex, "usrp_out_5mm_125e6_150e6.dat", True)
-	#self.source = blocks.throttle(gr.sizeof_gr_complex,self._sample_rate)
-	#self.connect(self.source2, self.source)
-	self.source = uhd.usrp_source(device_addr=options.args, stream_args=uhd.stream_args('fc32'))
-	self.source.set_center_freq(options.freq)
-	self.source.set_samp_rate(self._sample_rate)
-	self.source.set_gain(self._down_gain)
+	if options.playback == True:
+		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "iq_recording.dat", True)
+		self.source = blocks.throttle(gr.sizeof_gr_complex,self._sample_rate)
+		self.connect(self.source2, self.source)
+	else:
+		self.source = uhd.usrp_source(device_addr=options.args, stream_args=uhd.stream_args('fc32'))
+		self.source.set_center_freq(options.freq)
+		self.source.set_samp_rate(self._sample_rate)
+		self.source.set_gain(self._down_gain)
+
+	if options.record == True:
+		self.file_sink = blocks.file_sink(gr.sizeof_gr_complex, "iq_recording.dat")
+		self.connect(self.source, self.file_sink)
 
 	self.mag = blocks.complex_to_mag_squared()
 
@@ -235,6 +241,8 @@ def main():
 	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
 	parser.add_option("-n", "--packet-len", type="int", default=5, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
+	parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
+	parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")
 
 	(options, args) = parser.parse_args ()
 	
