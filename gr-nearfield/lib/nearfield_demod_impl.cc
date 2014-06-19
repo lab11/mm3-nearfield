@@ -36,15 +36,15 @@ float mean(std::vector<float> in_vec){
 	return m;
 }
 
-nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len) {
+nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len) {
 		return gnuradio::get_initial_sptr
-			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, pulse_len, pulse_len_accuracy, packet_len, header_len));
+			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, post_bitrate_accuracy, pulse_len, pulse_len_accuracy, post_pulse_len_accuracy, packet_len, header_len));
 	}
 
 /*
  * The private constructor
  */
-nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len)
+nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len)
 	: gr::sync_block("nearfield_demod",
 			gr::io_signature::make(1, 1, sizeof(float)),
 			gr::io_signature::make(0, 1, sizeof(float))),
@@ -55,8 +55,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
+	setPostPulseLenAccuracy(post_pulse_len_accuracy);
 	setBitrate(bitrate);
 	setBitrateAccuracy(bitrate_accuracy);
+	setPostBitrateAccuracy(post_bitrate_accuracy);
 	setPacketLen(packet_len);
 	setHeaderLen(header_len);
 

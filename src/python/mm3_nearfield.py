@@ -169,7 +169,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 
 	self.mag = blocks.complex_to_mag_squared()
 
-	self.tm_framer = nearfield.nearfield_demod(self._sample_rate, self._down_bitrate, self._down_bitrate_accuracy, self._pulse_len, self._pulse_len_accuracy, self._packet_len, self._header_len)
+	self.tm_framer = nearfield.nearfield_demod(self._sample_rate, self._down_bitrate, self._down_bitrate_accuracy, self._down_post_bitrate_accuracy, self._pulse_len, self._pulse_len_accuracy, self._post_pulse_len_accuracy, self._packet_len, self._header_len)
 	self.socket_pdu = blocks.socket_pdu("TCP_SERVER", "127.0.0.1", "12912", 10000)
 	self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "pdus")
 
@@ -235,7 +235,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self._pulse_len_accuracy = float(arg)
 	self.tm_framer.setPulseLenAccuracy(self._pulse_len_accuracy)
 
-   def setPulseLenAccuracy(self,arg):
+   def setPostPulseLenAccuracy(self,arg):
 	self._post_pulse_len_accuracy = float(arg)
 	self.tm_framer.setPostPulseLenAccuracy(self._post_pulse_len_accuracy)
 

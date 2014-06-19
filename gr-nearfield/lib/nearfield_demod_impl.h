@@ -66,7 +66,7 @@ namespace gr {
 	std::ofstream d_log_file;
 
      public:
-      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float pulse_len, float pulse_len_accuracy, int packet_len, int header_len);
+      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len);
       ~nearfield_demod_impl();
 
       // Where all the action really happens
