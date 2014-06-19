@@ -134,6 +134,14 @@ void nearfield_demod_impl::setBitrateAccuracy(float bitrate_accuracy_in){
 	setBitrate(d_bitrate);
 }
 
+void nearfield_demod_impl::setPostPulseLenAccuracy(float post_pulse_len_accuracy_in){
+	d_post_pulse_len_accuracy = post_pulse_len_accuracy_in;
+}
+
+void nearfield_demod_impl::setPostBitrateAccuracy(float post_bitrate_accuracy_in){
+	d_post_bitrate_accuracy = post_bitrate_accuracy_in;
+}
+
 void nearfield_demod_impl::setSampleRate(float sample_rate){
 	SDR_sample_rate = sample_rate;   // sample rate of software defined radio receiver
 	sample_period = 1/SDR_sample_rate;
@@ -155,10 +163,11 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Update sample counter for AGC logic
 		sample_ctr++;
 		if(sample_ctr > 1e6){
-			sample_ctr = 0;
-			max_sample = 0;
 			if(max_sample < threshold/1.2)
 				threshold /= 1.1;
+
+			sample_ctr = 0;
+			max_sample = 0;
 		}
 	
 		// STEP 1 --------------------------------------------------------------
@@ -219,10 +228,10 @@ int nearfield_demod_impl::work(int noutput_items,
 			float prf_length = roundf(mean(prf_vec)/sample_period);
 			// using this, demodulate the next N bits
 			// right after last sync pulse is a prf window
-			float pulse_length_min = pulse_length - 1;
-			float pulse_length_max = pulse_length + 1;
-			float prf_length_min = roundf(prf_length - prf_length*0.1);
-			float prf_length_max = roundf(prf_length + prf_length*0.1);
+			float pulse_length_min = pulse_length-pulse_length*d_post_pulse_len_accuracy/1e2 - 1;
+			float pulse_length_max = pulse_length+pulse_length*d_post_pulse_len_accuracy/1e2 + 1;
+			float prf_length_min = roundf(prf_length - prf_length*d_post_bitrate_accuracy/1e2);
+			float prf_length_max = roundf(prf_length + prf_length*d_post_bitrate_accuracy/1e2);
 			float prf_window = prf_length_max - prf_length_min;
 			// advance to the edge of the prf_min window and look for a pulse
 			// anywhere in the prf_max-prf_min frame.

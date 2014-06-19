@@ -51,8 +51,10 @@ namespace gr {
 	float n;
 	float d_pulse_len;
 	float d_pulse_len_accuracy;
+	float d_post_pulse_len_accuracy;
 	float d_bitrate;
 	float d_bitrate_accuracy;
+	float d_post_bitrate_accuracy;
 	float last_prf;
 	float last_pulse;
 	float max_sample;
@@ -77,8 +79,10 @@ namespace gr {
       float getThreshold();
       void setPulseLen(float pulse_len_in);
       void setPulseLenAccuracy(float pulse_len_accuracy_in);
+      void setPostPulseLenAccuracy(float post_pulse_len_accuracy_in);
       void setBitrate(float bitrate_in);
       void setBitrateAccuracy(float bitrate_accuracy_in);
+      void setPostBitrateAccuracy(float post_bitrate_accuracy_in);
       void setSampleRate(float sample_rate_in);
       void setPacketLen(int packet_len_in);
       void setHeaderLen(int header_len_in);

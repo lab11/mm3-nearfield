@@ -28,8 +28,10 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self._down_freq = options.freq
 	self._down_bitrate = options.bitrate
 	self._down_bitrate_accuracy = options.bitrate_accuracy
+	self._down_post_bitrate_accuracy = options.post_bitrate_accuracy
 	self._pulse_len = options.pulse_len
 	self._pulse_len_accuracy = options.pulse_len_accuracy
+	self._post_pulse_len_accuracy = options.post_pulse_len_accuracy
 	self._header_len = options.header_len
 	self._packet_len = options.packet_len
 	self._sample_rate = options.sample_rate
@@ -71,6 +73,14 @@ class my_top_block(grc_wxgui.top_block_gui):
 		converter=forms.float_converter(),
 	)
 	self.nb0.GetPage(0).Add(self._bitrate_accuracy_text_box)
+	self._post_bitrate_accuracy_text_box = forms.text_box(
+		parent=self.nb0.GetPage(0).GetWin(),
+		value=self._down_post_bitrate_accuracy,
+		callback=self.setDownPostBitrateAccuracy,
+		label="Post-sync Bitrate Accuracy (%)",
+		converter=forms.float_converter(),
+	)
+	self.nb0.GetPage(0).Add(self._post_bitrate_accuracy_text_box)
 	self._pulse_len_text_box = forms.text_box(
 		parent=self.nb0.GetPage(0).GetWin(),
 		value=self._pulse_len,
@@ -87,6 +97,14 @@ class my_top_block(grc_wxgui.top_block_gui):
 		converter=forms.float_converter(),
 	)
 	self.nb0.GetPage(0).Add(self._pulse_len_accuracy_text_box)
+	self._post_pulse_len_accuracy_text_box = forms.text_box(
+		parent=self.nb0.GetPage(0).GetWin(),
+		value=self._post_pulse_len_accuracy,
+		callback=self.setPostPulseLenAccuracy,
+		label="Post-sync Pulse Length Accuracy (%)",
+		converter=forms.float_converter(),
+	)
+	self.nb0.GetPage(0).Add(self._post_pulse_len_accuracy_text_box)
 	self._header_len_text_box = forms.text_box(
 		parent=self.nb0.GetPage(0).GetWin(),
 		value=self._header_len,
@@ -205,6 +223,10 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self._down_bitrate_accuracy = float(arg)
 	self.tm_framer.setBitrateAccuracy(self._down_bitrate_accuracy)
 
+   def setDownPostBitrateAccuracy(self,arg):
+	self._down_post_bitrate_accuracy = float(arg)
+	self.tm_framer.setPostBitrateAccuracy(self._down_bitrate_accuracy)
+
    def setPulseLen(self,arg):
 	self._pulse_len = float(arg)
 	self.tm_framer.setPulseLen(self._pulse_len)
@@ -212,6 +234,10 @@ class my_top_block(grc_wxgui.top_block_gui):
    def setPulseLenAccuracy(self,arg):
 	self._pulse_len_accuracy = float(arg)
 	self.tm_framer.setPulseLenAccuracy(self._pulse_len_accuracy)
+
+   def setPulseLenAccuracy(self,arg):
+	self._post_pulse_len_accuracy = float(arg)
+	self.tm_framer.setPostPulseLenAccuracy(self._post_pulse_len_accuracy)
 
    def setHeaderLen(self,arg):
 	self._header_len = int(arg)
@@ -236,8 +262,10 @@ def main():
 	parser.add_option("-g", "--gain", type="float", default=100, help="USRP gain [default=%default]")
 	parser.add_option("-b", "--bitrate", type="float", default=91, help="RX Bitrate [default=%default]")
 	parser.add_option("-B", "--bitrate-accuracy", type="float", default=10, help="RX Bitrate Accuracy (%) [default=%default]")
+	parser.add_option("", "--post-bitrate-accuracy", type="float", default=10, help="Post-sync RX Bitrate Accuracy (%) [default=%default]")
 	parser.add_option("-p", "--pulse-len", type="float", default=500e-9, help="Pulse Length [default=%default]")
 	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=80, help="Pulse Length Accuracy (%)")
+	parser.add_option("", "--post-pulse-len-accuracy", type="float", default=20, help="Post-sync Pulse Length Accuracy (%)")
 	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
 	parser.add_option("-n", "--packet-len", type="int", default=5, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")

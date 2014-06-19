@@ -53,8 +53,10 @@ namespace gr {
       virtual float getThreshold() = 0;
       virtual void setPulseLen(float pulse_len_in) = 0;
       virtual void setPulseLenAccuracy(float pulse_len_accuracy_in) = 0;
+      virtual void setPostPulseLenAccuracy(float post_pulse_len_accuracy_in) = 0;
       virtual void setBitrate(float bitrate_in) = 0;
       virtual void setBitrateAccuracy(float bitrate_accuracy_in) = 0;
+      virtual void setPostBitrateAccuracy(float post_bitrate_accuracy_in) = 0;
       virtual void setSampleRate(float sample_rate_in) = 0;
       virtual void setPacketLen(int packet_len_in) = 0;
       virtual void setHeaderLen(int header_len_in) = 0;
