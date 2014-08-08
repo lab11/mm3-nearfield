@@ -42,6 +42,10 @@ namespace gr {
 	float pulse_count;
 	float prf_count;
 	float sync;
+	float valid_count;
+	float error;
+	float fuzz;
+	float last_prf_count;
 	float header;
 	float sync_prf;
 	float sync_prf2;

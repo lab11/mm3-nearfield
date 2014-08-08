@@ -51,7 +51,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt") {
 
 	// variables
-	threshold = 0.5;            // threshold set after observing data
+	threshold = 0.1;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -72,6 +72,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	pulse_count = 0;    // length of current pulse (1s)
 	prf_count = 0;      // length of current prf (0s)
 	sync = 0;           // current consecutive sync pulses
+	error = 0;
+	fuzz = 0;
+	last_prf_count = 0;
+	valid_count = 0;
 	sync_prf = 0;       // prf counter in sync part of loop
 	sync_prf2 = 0;      // prf counter in sync part of loop (prf_window)
 	sync_pulse = 0;     // pulse counter in sync part of loop
@@ -157,6 +161,9 @@ int nearfield_demod_impl::work(int noutput_items,
 	float *out = (float *) output_items[0];
 
 	int nn = 0;
+
+	//int valid_count = 0;
+	//std::cout << "reset at beginning" << std::endl;
 	while(nn < noutput_items){
 		//Local non-persistent variables
 		float rx_data;
@@ -164,19 +171,40 @@ int nearfield_demod_impl::work(int noutput_items,
 
 		//Update sample counter for AGC logic
 		sample_ctr++;
-		if(sample_ctr > 1e6){
-			if(max_sample < threshold/1.2)
-				threshold /= 1.1;
 
+		if(sample_ctr > 1e6){
+		
+			if(max_sample < threshold/1.2){
+				threshold /= 1.1;
+		                //threshold = 0.999*threshold + 0.001*in[nn];
+				//std::cout << "threshold decrease: " << threshold << std::endl;
+			}
+		
+
+		        //threshold = 0.999*threshold + 0.001*in[nn];
 			sample_ctr = 0;
 			max_sample = 0;
+
 		}
+
+		
+
+		//threshold = 0.999*threshold + 0.001*in[nn];
 	
 		// STEP 1 --------------------------------------------------------------
+/*
+		if(in[nn] > 1) {
+			std::cout << "start!" << std::endl;
+			std::cout << "volt: " << in[nn] << ", threshold: " << threshold << std::endl;
+		}
+*/
+
+		//std::cout << "volt: " << in[nn] << ", threshold: " << threshold << std::endl;
 		if(in[nn] > threshold){
 			max_sample = (in[nn] > max_sample) ? in[nn] : max_sample;
 			rx_data = 1;
 			sample_ctr = 0;
+			//threshold = 0.999*threshold + 0.001*in[nn];             // increment threshold since we're probably picking up noise
 		}else
 			rx_data = 0;
 	
@@ -184,37 +212,95 @@ int nearfield_demod_impl::work(int noutput_items,
 		transition = rx_data - last_data;     // see if we are at an edge of a pulse
 		// NOT SYNCHRONIZED YET
 		if(sync < header) {
+
 			if(transition > 0) {           // rising pulse
+				
+				//std::cout << "transition > 0, volt = " << in[nn] << std::endl; 
+				//std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
+				//std::cout << "prf_min: " << prf_min << "prf_max: " << prf_max << std::endl;
+				threshold = 0.95*threshold + 0.05*in[nn];             // increment threshold since we're probably picking up noise
+				//std::cout << "increase threshold to: " << threshold << std::endl; 
 				// check for prf
 				if(sync >= 1){
 					float prf_val = prf_count*sample_period;
 					if(prf_val > prf_min && prf_val < prf_max){
 						prf_vec.push_back(prf_val);
+						//std::cout << "sync valid " << sync << std::endl;
+					} else if (fuzz == 0 &&  prf_val <= prf_min){
+						fuzz += 1;
+						threshold = 0.95*threshold + 0.05*in[nn];             // increment threshold since we're probably picking up noise
+						//std::cout << "tolerant 1 fuzz " << std::endl;
+						//std::cout << "threshold increase: " << threshold << std::endl;
+
 					} else {
 						sync = 0;                     // reset the sync counter
+						valid_count = 0;
 						prf_vec.clear();                 // reset prf vector
 						pulse_vec.clear();               // reset pulse vector
-						threshold *= 1.1;             // increment threshold since we're probably picking up noise
-					}
+						threshold *= 1.1;
+						threshold = 0.95*threshold + 0.05*in[nn];             // increment threshold since we're probably picking up noise
+						//std::cout << "sync abandoned " << std::endl;
+						//std::cout << "threshold increase: " << threshold << std::endl;
+						//std::cout << "clear, valid_coun: " << valid_count << ", sync: " << sync << std::endl; 
+					}	
+					
 					//Update last_prf for every header bit
 					last_prf = prf_val;
 				}
 				pulse_count = 1;     
-				prf_count = 0;         
+				last_prf_count = prf_count;       
+				prf_count = 0;  
 			} else if(transition < 0) {       // falling edge of pulse
+				//std::cout << "transition < 0, volt = " << in[nn] << std::endl;
+				/* 
+				if ( threshold > 0.8 && sync > 0) {
+					pulse_count += 3;
+				} else if (threshold > 0.7 && threshold <= 0.8 && sync > 0) {
+					pulse_count += 2;
+				} else if (threshold > 0.6 && threshold <= 0.7 && sync > 0) {
+					pulse_count += 1;
+				} else {
+					pulse_count = pulse_count;
+				}
+				*/
+
 				// determine if pulse is valid or not
 				float pulse_val = pulse_count*sample_period;
+		                float pulse_val_min = (pulse_count - 1) * sample_period; 
+		                float pulse_val_max = (pulse_count + 1) * sample_period; 
 				//Update last_pulse for every header bit
 				if(pulse_count > 1)
 					last_pulse = pulse_val;
-				if(pulse_val > pulse_min && pulse_val < pulse_max) {
+				//std::cout << "pulse_count: " << pulse_count << ", pulse_val: " << pulse_val << std::endl;
+				//std::cout << "pulse_min: " << pulse_min << ", pulse_max: " << pulse_max << std::endl;
+				
+				if((pulse_val_min > pulse_min && pulse_val_min < pulse_max) || 
+						(pulse_val_max > pulse_min && pulse_val_max < pulse_max)) {
 					// increment sync counter and pulse vector
 					sync = sync+1;              // valid pulse
+					error = 0;		//leave space for an error
+					fuzz = 0;
 					pulse_vec.push_back(pulse_val);
 					pulse_count = 0;
-				} else {
-					pulse_count = 0;
-					sync = 0;
+					if (pulse_val > pulse_min && pulse_val < pulse_max) {
+						valid_count = valid_count + 1;
+						//std::cout << "accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
+					} else {
+						//std::cout << "sudo accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
+					}
+				} else {				
+			 		if (error == 0 && sync >= 1 ) {	
+						//std::cout << "tolerant 1 error!!!" << std::endl;
+						error = + 1;
+						prf_count = last_prf_count + pulse_count;
+						pulse_count = 0;
+					} else {
+						pulse_count = 0;
+						sync = 0;
+						error = 0;
+						valid_count = 0;
+						//std::cout << "clear, valid_counter: " << valid_count << ", sync: " << sync << std::endl;
+					}
 				}
 			} else {    // no transition
 				if(rx_data == 1)
@@ -224,7 +310,14 @@ int nearfield_demod_impl::work(int noutput_items,
 			last_data = rx_data;
 		}
 		// SYNCHRONIZED
-		if(sync == header) {
+		if(sync == header && valid_count < header - 1) {
+			valid_count = 0;
+			sync = 0;
+		}
+		if(sync == header && valid_count >= (header - 1)) {
+			error = 0;
+			fuzz = 1;
+
 			// find average pulse width and prf
 			float pulse_length = roundf(mean(pulse_vec)/sample_period);
 			float prf_length = roundf(mean(prf_vec)/sample_period);
@@ -246,10 +339,21 @@ int nearfield_demod_impl::work(int noutput_items,
 			if(rx_data == 1) {
 				sync_pulse = sync_pulse + 1; // might be a pulse
 			} else {
+				/*
+				if(threshold > 0.7) {
+					sync_pulse += 2;
+				} else if (threshold > 0.6 && threshold <= 0.7) {
+					sync_pulse += 1;
+				} else {
+					sync_pulse = sync_pulse;
+				}
+				*/
+				
 				if(sync_pulse >= pulse_length_min && sync_pulse <= pulse_length_max) {     // valid pulse
 					valid_pulse = 1;
 					sav_pulse = sync_pulse;
 				}
+				//std::cout << "pulse too short, recognized as zero" << std::endl;
 				sync_pulse = 0;              // reset
 			}
 			if(valid_pulse == 1) {              // we found a pulse
@@ -293,6 +397,8 @@ int nearfield_demod_impl::work(int noutput_items,
 			sync_prf2 = 0;
 			sync_pulse = 0;
 			valid_pulse = 0;
+			valid_count = 0;
+			//std::cout << "found all bits, clear valid_counter: " << valid_count << std::endl;
 		}
 	
 		//Increment the data index pointer
