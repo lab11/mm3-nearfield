@@ -26,7 +26,7 @@
 #include "nearfield_demod_impl.h"
 #include <numeric>
 #include <iterator>
-
+#include <queue>
 namespace gr {
 namespace nearfield {
 
@@ -51,7 +51,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt") {
 
 	// variables
-	threshold = 0.1;            // threshold set after observing data
+	threshold = 0.48;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -68,6 +68,8 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	
 	// Treating this like it's streaming data so I won't use some of the 
 	// efficient Matlab functions that would speed this up.
+	last_pulse_length = 0;
+	last_pulse_distance = 0;
 	last_data = 0;      // previous received data point
 	pulse_count = 0;    // length of current pulse (1s)
 	prf_count = 0;      // length of current prf (0s)
@@ -83,10 +85,18 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
 	max_sample = 0;
+	
 
 	pulse_vec.clear();
 	prf_vec.clear();
 	demod_data.clear();
+        for (int k = 0; k < 100; k++ ) {
+        	lastpulses.push(0);
+	}
+        for (int k = 0; k < 7; k++ ) {
+        	lastsamples[k] = 0;
+	}
+	energy = 0;
 
 	message_port_register_out(pmt::mp("frame_out"));
 }
@@ -161,6 +171,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	float *out = (float *) output_items[0];
 
 	int nn = 0;
+	float current = 0;
 
 	//int valid_count = 0;
 	//std::cout << "reset at beginning" << std::endl;
@@ -168,14 +179,47 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Local non-persistent variables
 		float rx_data;
 		float transition;
+		float past = lastpulses.front();
+		lastpulses.pop();
+		energy = energy + in[nn] * in[nn] - past * past;
+		lastpulses.push(in[nn]);
+		for(int m=0; m < 7; m++){
+			lastsamples[m] = lastsamples[m+1];
+		}
+		lastsamples[7] = in[nn];
+			//std::cout << "in: " << in[nn-filt_count] << std::endl;	
+			//float energy_template = 4.5211;
+			//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
+		float energy_template = 5.1611885;
+		//current = (in[nn] * 0.5914 + in[nn-1] * 1.1921 + in[nn-2] * 1.2286 + 
+		//in[nn-3] * 0.8965 + in[nn-4] * 0.5363 + in[nn-5] * 0.324 + 
+		//in[nn-6] * 0.1764 + in[nn-7] * 0.1156)/sqrt(energy*4.5211);
+		//std::cout << "energy: " << energy << std::endl;
+		//std::cout << "current: " << current << std::endl;	
+		//current = (in[nn] * 0.1156 + in[nn-1] * 0.1764 + in[nn-2] * 0.324 + 
+		//	in[nn-3] * 0.5363 + in[nn-4] * 0.8965 + in[nn-5] * 1.2286 + 
+		//	in[nn-6] * 1.1921 + in[nn-7] * 0.5914)/sqrt(energy*4.5211);
+		
+		//current = (in[nn] * 0.01336336 + in[nn-1] * 0.03111696 + in[nn-2] * 0.104976 + 
+		//	in[nn-3] * 0.28761769 + in[nn-4] * 0.80371225 + in[nn-5] * 1.50945796 + 
+		//	in[nn-6] * 1.42110241 + in[nn-7] * 0.34975396)/sqrt(energy * energy_template);
+		
+		//current = (lastsamples[0] * 0.01336336 + lastsamples[1] * 0.03111696 + lastsamples[2] * 0.104976 + 
+		//	lastsamples[3] * 0.28761769 + lastsamples[4] * 0.80371225 + lastsamples[5] * 1.50945796 + 
+		//	lastsamples[6] * 1.42110241 + lastsamples[7] * 0.34975396)/sqrt(energy * energy_template);
+	
+		current = (lastsamples[0] * 0.1156 + lastsamples[1] * 0.1764 + lastsamples[2] * 0.324 + 
+			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
+			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
+			
 
 		//Update sample counter for AGC logic
 		sample_ctr++;
-
+		
 		if(sample_ctr > 1e6){
 		
 			if(max_sample < threshold/1.2){
-				threshold /= 1.1;
+				//threshold /= 1.1;
 		                //threshold = 0.999*threshold + 0.001*in[nn];
 				//std::cout << "threshold decrease: " << threshold << std::endl;
 			}
@@ -186,24 +230,19 @@ int nearfield_demod_impl::work(int noutput_items,
 			max_sample = 0;
 
 		}
+		
+
 
 		
 
-		//threshold = 0.999*threshold + 0.001*in[nn];
+		//threshold = 0.999*threshold + 0.001*current;
 	
 		// STEP 1 --------------------------------------------------------------
-/*
-		if(in[nn] > 1) {
-			std::cout << "start!" << std::endl;
-			std::cout << "volt: " << in[nn] << ", threshold: " << threshold << std::endl;
-		}
-*/
-
 		//std::cout << "volt: " << in[nn] << ", threshold: " << threshold << std::endl;
-		if(in[nn] > threshold){
-			max_sample = (in[nn] > max_sample) ? in[nn] : max_sample;
+		if(current > threshold){
+			max_sample = (current > max_sample) ? current : max_sample;
 			rx_data = 1;
-			sample_ctr = 0;
+			//sample_ctr = 0;
 			//threshold = 0.999*threshold + 0.001*in[nn];             // increment threshold since we're probably picking up noise
 		}else
 			rx_data = 0;
@@ -215,93 +254,94 @@ int nearfield_demod_impl::work(int noutput_items,
 
 			if(transition > 0) {           // rising pulse
 				
-				//std::cout << "transition > 0, volt = " << in[nn] << std::endl; 
+				//std::cout << "transition > 0, volt = " << current << std::endl; 
 				//std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
 				//std::cout << "prf_min: " << prf_min << "prf_max: " << prf_max << std::endl;
-				threshold = 0.95*threshold + 0.05*in[nn];             // increment threshold since we're probably picking up noise
+				//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
 				//std::cout << "increase threshold to: " << threshold << std::endl; 
+
+				 
 				// check for prf
 				if(sync >= 1){
 					float prf_val = prf_count*sample_period;
 					if(prf_val > prf_min && prf_val < prf_max){
 						prf_vec.push_back(prf_val);
 						//std::cout << "sync valid " << sync << std::endl;
-					} else if (fuzz == 0 &&  prf_val <= prf_min){
-						fuzz += 1;
-						threshold = 0.95*threshold + 0.05*in[nn];             // increment threshold since we're probably picking up noise
+						fuzz = 0;
+					} else if (prf_val <= prf_min){
+						fuzz = 1;	
+						//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
 						//std::cout << "tolerant 1 fuzz " << std::endl;
 						//std::cout << "threshold increase: " << threshold << std::endl;
+						prf_count = last_prf_count;
 
 					} else {
-						sync = 0;                     // reset the sync counter
+						sync = 1;                     // reset the sync counter
 						valid_count = 0;
 						prf_vec.clear();                 // reset prf vector
 						pulse_vec.clear();               // reset pulse vector
-						threshold *= 1.1;
-						threshold = 0.95*threshold + 0.05*in[nn];             // increment threshold since we're probably picking up noise
+						fuzz = 1;						
+						//threshold *= 1.1;
+						//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
 						//std::cout << "sync abandoned " << std::endl;
+
 						//std::cout << "threshold increase: " << threshold << std::endl;
 						//std::cout << "clear, valid_coun: " << valid_count << ", sync: " << sync << std::endl; 
 					}	
 					
 					//Update last_prf for every header bit
 					last_prf = prf_val;
-				}
-				pulse_count = 1;     
-				last_prf_count = prf_count;       
-				prf_count = 0;  
-			} else if(transition < 0) {       // falling edge of pulse
-				//std::cout << "transition < 0, volt = " << in[nn] << std::endl;
-				/* 
-				if ( threshold > 0.8 && sync > 0) {
-					pulse_count += 3;
-				} else if (threshold > 0.7 && threshold <= 0.8 && sync > 0) {
-					pulse_count += 2;
-				} else if (threshold > 0.6 && threshold <= 0.7 && sync > 0) {
-					pulse_count += 1;
 				} else {
-					pulse_count = pulse_count;
+					fuzz = 0;
 				}
-				*/
+				last_prf_count = prf_count;       
+				prf_count = 0; 
 
+			} else if(transition < 0) {       // falling edge of pulse
+				//std::cout << "transition < 0, volt = " << current << std::endl;
 				// determine if pulse is valid or not
 				float pulse_val = pulse_count*sample_period;
-		                float pulse_val_min = (pulse_count - 1) * sample_period; 
-		                float pulse_val_max = (pulse_count + 1) * sample_period; 
+		                //float pulse_val_min = (pulse_count - 1) * sample_period; 
+		                //float pulse_val_max = (pulse_count + 1) * sample_period; 
+				
 				//Update last_pulse for every header bit
 				if(pulse_count > 1)
 					last_pulse = pulse_val;
 				//std::cout << "pulse_count: " << pulse_count << ", pulse_val: " << pulse_val << std::endl;
 				//std::cout << "pulse_min: " << pulse_min << ", pulse_max: " << pulse_max << std::endl;
 				
-				if((pulse_val_min > pulse_min && pulse_val_min < pulse_max) || 
-						(pulse_val_max > pulse_min && pulse_val_max < pulse_max)) {
+				//if((pulse_val_min > pulse_min && pulse_val_min < pulse_max) || 
+				//		(pulse_val_max > pulse_min && pulse_val_max < pulse_max)) {
 					// increment sync counter and pulse vector
+				if(fuzz == 0) {
 					sync = sync+1;              // valid pulse
 					error = 0;		//leave space for an error
-					fuzz = 0;
+					//fuzz = 0;
 					pulse_vec.push_back(pulse_val);
 					pulse_count = 0;
-					if (pulse_val > pulse_min && pulse_val < pulse_max) {
-						valid_count = valid_count + 1;
-						//std::cout << "accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
-					} else {
-						//std::cout << "sudo accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
-					}
-				} else {				
-			 		if (error == 0 && sync >= 1 ) {	
-						//std::cout << "tolerant 1 error!!!" << std::endl;
-						error = + 1;
-						prf_count = last_prf_count + pulse_count;
-						pulse_count = 0;
-					} else {
-						pulse_count = 0;
-						sync = 0;
-						error = 0;
-						valid_count = 0;
-						//std::cout << "clear, valid_counter: " << valid_count << ", sync: " << sync << std::endl;
-					}
+					//if (pulse_val > pulse_min && pulse_val < pulse_max) {
+				//valid_count = valid_count + 1;
+					//std::cout << "accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
+				} else {
+				//ignore
 				}
+				//} else {
+						//std::cout << "sudo accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
+					//}
+				//} else {				
+			 		//if (error == 0 && sync >= 1 ) {	
+				//		//std::cout << "tolerant 1 error!!!" << std::endl;
+				//		error = + 1;
+				//		prf_count = last_prf_count + pulse_count;
+				//		pulse_count = 0;
+				//	} else {
+				//		pulse_count = 0;
+				//		sync = 0;
+				//		error = 0;
+				//		valid_count = 0;
+				//		std::cout << "clear, valid_counter: " << valid_count << ", sync: " << sync << std::endl;
+				//	}
+				//}
 			} else {    // no transition
 				if(rx_data == 1)
 					pulse_count = pulse_count+1;
@@ -310,21 +350,14 @@ int nearfield_demod_impl::work(int noutput_items,
 			last_data = rx_data;
 		}
 		// SYNCHRONIZED
-		if(sync == header && valid_count < header - 1) {
-			valid_count = 0;
-			sync = 0;
-		}
-		if(sync == header && valid_count >= (header - 1)) {
+		if(sync == header) {
 			error = 0;
 			fuzz = 1;
 
 			// find average pulse width and prf
-			float pulse_length = roundf(mean(pulse_vec)/sample_period);
 			float prf_length = roundf(mean(prf_vec)/sample_period);
 			// using this, demodulate the next N bits
 			// right after last sync pulse is a prf window
-			float pulse_length_min = pulse_length-pulse_length*d_post_pulse_len_accuracy/1e2 - 1;
-			float pulse_length_max = pulse_length+pulse_length*d_post_pulse_len_accuracy/1e2 + 1;
 			float prf_length_min = roundf(prf_length - prf_length*d_post_bitrate_accuracy/1e2);
 			float prf_length_max = roundf(prf_length + prf_length*d_post_bitrate_accuracy/1e2);
 			float prf_window = prf_length_max - prf_length_min;
@@ -339,17 +372,8 @@ int nearfield_demod_impl::work(int noutput_items,
 			if(rx_data == 1) {
 				sync_pulse = sync_pulse + 1; // might be a pulse
 			} else {
-				/*
-				if(threshold > 0.7) {
-					sync_pulse += 2;
-				} else if (threshold > 0.6 && threshold <= 0.7) {
-					sync_pulse += 1;
-				} else {
-					sync_pulse = sync_pulse;
-				}
-				*/
-				
-				if(sync_pulse >= pulse_length_min && sync_pulse <= pulse_length_max) {     // valid pulse
+				//if(sync_pulse >= pulse_length_min && sync_pulse <= pulse_length_max) {     // valid pulse
+				if(sync_pulse >= 2) {     // valid pulse
 					valid_pulse = 1;
 					sav_pulse = sync_pulse;
 				}

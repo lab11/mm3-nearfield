@@ -23,7 +23,7 @@
 
 #include <nearfield/nearfield_demod.h>
 #include <fstream>
-
+#include <queue>
 namespace gr {
   namespace nearfield {
 
@@ -38,6 +38,8 @@ namespace gr {
 	float prf_max;
 	float prf_min;
 	float sample_period;
+	float last_pulse_length;
+	float last_pulse_distance;
 	float last_data;
 	float pulse_count;
 	float prf_count;
@@ -62,6 +64,9 @@ namespace gr {
 	float last_prf;
 	float last_pulse;
 	float max_sample;
+	std::queue<float> lastpulses;
+	float lastsamples[8];
+	float energy;
 	int sample_ctr;
 	std::vector<float> pulse_vec;
 	std::vector<float> prf_vec;
