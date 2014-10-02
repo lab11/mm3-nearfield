@@ -250,7 +250,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	
 		// STEP 2 --------------------------------------------------------------
 		if (sync > header) {
-			std::cout << "sync > header, no possible!!!!!!!!!!!!!!!!" << std::endl;
+			//std::cout << "sync > header, no possible!!!!!!!!!!!!!!!!" << std::endl;
 			sync = 0;
 		}
 		transition = rx_data - last_data;     // see if we are at an edge of a pulse
@@ -273,7 +273,7 @@ int nearfield_demod_impl::work(int noutput_items,
 						prf_vec.push_back(prf_val);
 						//std::cout << "sync valid " << sync << std::endl;
 						fuzz = 0;
-						std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
+						//std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
 					} else if (prf_val <= prf_min){
 						fuzz = 1;	
 						//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
@@ -364,7 +364,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		// SYNCHRONIZED
 		if(sync == header) {
 			if(n > N) {
-				std::cout << "error!!! n > 28!!!" << std::endl;
+				//std::cout << "error!!! n > 28!!!" << std::endl;
 				n = 0;
 			}
 			error = 0;
