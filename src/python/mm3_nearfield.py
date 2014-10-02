@@ -15,6 +15,11 @@ import time
 import struct
 import sys
 
+# Used for pushing information to the cloud data service:
+import json, urllib2
+GATD_HOST = 'http://inductor.eecs.umich.edu:8081/'
+GATD_PROFILE_ID = 'N9NaoNAJzi'
+
 def make_normal(widget):
    font = widget.GetFont()
    font.SetWeight(wx.FONTWEIGHT_NORMAL)
@@ -35,6 +40,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self._header_len = options.header_len
 	self._packet_len = options.packet_len
 	self._sample_rate = options.sample_rate
+	self._upload = options.upload
 	self._trigger_level = 1.0
 
 	#Set up the GUI elements
@@ -206,6 +212,19 @@ class my_top_block(grc_wxgui.top_block_gui):
 			self.threshold_text.set_value('Current Threshold: ' + thr_fmt + '  (TOO LOW)')
 		else:
 			self.threshold_text.set_value('Current Threshold: ' + thr_fmt)
+
+		if self._upload:
+			# Send sample to cloud service
+			data = {
+					'bitrate': obs_bitrate,
+					'pulselen': obs_pl,
+					'threshold': obs_thr,
+			}
+
+			req = urllib2.Request(GATD_HOST + GATD_PROFILE_ID)
+			req.add_header('Content-Type', 'application/json')
+
+			response = urllib2.urlopen(req, json.dumps(data))
 		
    def setDownBitrate(self,arg):
 	self._down_bitrate = float(arg)
@@ -271,6 +290,7 @@ def main():
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
 	parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
 	parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")
+	parser.add_option("-u", "--upload", action="store_true", default=False, help="Upload data to the cloud service (GATD)")
 
 	(options, args) = parser.parse_args ()
 	
