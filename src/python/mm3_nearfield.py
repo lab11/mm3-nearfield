@@ -40,7 +40,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self._header_len = options.header_len
 	self._packet_len = options.packet_len
 	self._sample_rate = options.sample_rate
-	self._upload = option.upload
+	self._upload = options.upload
 	self._trigger_level = 1.0
 
 	#Set up the GUI elements
