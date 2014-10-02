@@ -75,7 +75,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	prf_count = 0;      // length of current prf (0s)
 	sync = 0;           // current consecutive sync pulses
 	error = 0;
-	fuzz = 0;
+	fuzz = 1;
 	last_prf_count = 0;
 	valid_count = 0;
 	sync_prf = 0;       // prf counter in sync part of loop
@@ -187,9 +187,9 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[m] = lastsamples[m+1];
 		}
 		lastsamples[7] = in[nn];
-			//std::cout << "in: " << in[nn-filt_count] << std::endl;	
-			//float energy_template = 4.5211;
-			//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
+		//std::cout << "in: " << in[nn-filt_count] << std::endl;	
+		//float energy_template = 4.5211;
+		//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
 		float energy_template = 5.1611885;
 		//current = (in[nn] * 0.5914 + in[nn-1] * 1.1921 + in[nn-2] * 1.2286 + 
 		//in[nn-3] * 0.8965 + in[nn-4] * 0.5363 + in[nn-5] * 0.324 + 
@@ -212,7 +212,7 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 			
-
+		/*
 		//Update sample counter for AGC logic
 		sample_ctr++;
 		
@@ -230,6 +230,7 @@ int nearfield_demod_impl::work(int noutput_items,
 			max_sample = 0;
 
 		}
+		*/
 		
 
 
@@ -240,7 +241,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		// STEP 1 --------------------------------------------------------------
 		//std::cout << "volt: " << in[nn] << ", threshold: " << threshold << std::endl;
 		if(current > threshold){
-			max_sample = (current > max_sample) ? current : max_sample;
+			//max_sample = (current > max_sample) ? current : max_sample;
 			rx_data = 1;
 			//sample_ctr = 0;
 			//threshold = 0.999*threshold + 0.001*in[nn];             // increment threshold since we're probably picking up noise
@@ -248,6 +249,10 @@ int nearfield_demod_impl::work(int noutput_items,
 			rx_data = 0;
 	
 		// STEP 2 --------------------------------------------------------------
+		if (sync > header) {
+			std::cout << "sync > header, no possible!!!!!!!!!!!!!!!!" << std::endl;
+			sync = 0;
+		}
 		transition = rx_data - last_data;     // see if we are at an edge of a pulse
 		// NOT SYNCHRONIZED YET
 		if(sync < header) {
@@ -268,11 +273,13 @@ int nearfield_demod_impl::work(int noutput_items,
 						prf_vec.push_back(prf_val);
 						//std::cout << "sync valid " << sync << std::endl;
 						fuzz = 0;
+						std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
 					} else if (prf_val <= prf_min){
 						fuzz = 1;	
 						//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
 						//std::cout << "tolerant 1 fuzz " << std::endl;
 						//std::cout << "threshold increase: " << threshold << std::endl;
+
 						prf_count = last_prf_count;
 
 					} else {
@@ -343,14 +350,23 @@ int nearfield_demod_impl::work(int noutput_items,
 				//	}
 				//}
 			} else {    // no transition
-				if(rx_data == 1)
+				if(rx_data == 1){
 					pulse_count = pulse_count+1;
-				prf_count = prf_count+1;
+				}
+				if(prf_count < 1000000) {
+					prf_count = prf_count+1;
+				} else {
+					prf_count = 0;
+				}
 			}
 			last_data = rx_data;
 		}
 		// SYNCHRONIZED
 		if(sync == header) {
+			if(n > N) {
+				std::cout << "error!!! n > 28!!!" << std::endl;
+				n = 0;
+			}
 			error = 0;
 			fuzz = 1;
 
