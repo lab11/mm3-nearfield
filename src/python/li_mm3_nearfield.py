@@ -185,10 +185,10 @@ class my_top_block(grc_wxgui.top_block_gui):
 
     
         #chan_filt_coeffs = filter.firdes.low_pass_2(1,          # gain
-        #                                            self._sample_rate,  # sampling rate
-        #                                            5e6,        # passband cutoff
-        #                                            4e6,        # transition bw
-        #                                            62)         # stopband attenuation
+        #                                           self._sample_rate,  # sampling rate
+        #                                           3e6,        # passband cutoff
+        #                                           2e6,        # transition bw
+        #                                           62)         # stopband attenuation
 
         #Turn If to baseband and filter.
         #self.chan_filt = filter.freq_xlating_fir_filter_ccf(1,#not sure
@@ -299,12 +299,12 @@ def main():
 
         parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2",
                           help="UHD device address args [default=%default]")
-	parser.add_option("-f", "--freq", type="float", default=899.4e6, help="USRP carrier frequency [default=%default]")
+	parser.add_option("-f", "--freq", type="float", default=905e6, help="USRP carrier frequency [default=%default]")
 	parser.add_option("-g", "--gain", type="float", default=62, help="USRP gain [default=%default]")
 	parser.add_option("-b", "--bitrate", type="float", default=220, help="RX Bitrate [default=%default]")
 	#12nope -- 267
         #40nope -- 125
-        parser.add_option("-B", "--bitrate-accuracy", type="float", default=10, help="RX Bitrate Accuracy (%) [default=%default]")
+        parser.add_option("-B", "--bitrate-accuracy", type="float", default=15, help="RX Bitrate Accuracy (%) [default=%default]")
 	parser.add_option("", "--post-bitrate-accuracy", type="float", default=10, help="Post-sync RX Bitrate Accuracy (%) [default=%default]")
 	parser.add_option("-p", "--pulse-len", type="float", default=320e-9, help="Pulse Length [default=%default]")
 	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=10, help="Pulse Length Accuracy (%)")

@@ -27,6 +27,8 @@
 #include <numeric>
 #include <iterator>
 #include <queue>
+#include <ctime>
+#include <iostream>
 namespace gr {
 namespace nearfield {
 
@@ -51,7 +53,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt") {
 
 	// variables
-	threshold = 0.48;            // threshold set after observing data
+	threshold = 0.5;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -417,10 +419,14 @@ int nearfield_demod_impl::work(int noutput_items,
 			new_message_dict = pmt::dict_add(new_message_dict, key, value);
 			pmt::pmt_t new_message = pmt::cons(new_message_dict, pmt::PMT_NIL);
 			message_port_pub(pmt::mp("frame_out"), new_message);
-
+			time_t current_time = time(0);
+			char* dt = std::ctime(&current_time);
 			std::cout << "SENDING MESSAGE" << std::endl;
+			std::cout << "@@@" << dt;
 			for(int ii=0; ii < demod_data.size(); ii++){
 				std::cout << (int)(demod_data[ii]) << ", ";
+				d_log_file << "SENDING MESSAGE" << std::endl;
+				d_log_file << "@@@" << dt;
 				d_log_file << (int)(demod_data[ii]);
 			}
 			d_log_file << std::endl;
