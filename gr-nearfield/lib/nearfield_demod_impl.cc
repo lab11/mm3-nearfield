@@ -423,11 +423,11 @@ int nearfield_demod_impl::work(int noutput_items,
 			char* dt = std::ctime(&current_time);
 			std::cout << "SENDING MESSAGE" << std::endl;
 			std::cout << "@@@" << dt;
+			d_log_file << "SENDING MESSAGE" << std::endl;
+			d_log_file << "@@@" << dt;
 			for(int ii=0; ii < demod_data.size(); ii++){
 				std::cout << (int)(demod_data[ii]) << ", ";
-				d_log_file << "SENDING MESSAGE" << std::endl;
-				d_log_file << "@@@" << dt;
-				d_log_file << (int)(demod_data[ii]);
+				d_log_file << (int)(demod_data[ii]) << ", ";
 			}
 			d_log_file << std::endl;
 			std::cout << std::endl;
