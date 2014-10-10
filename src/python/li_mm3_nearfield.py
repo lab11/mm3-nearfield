@@ -185,10 +185,10 @@ class my_top_block(grc_wxgui.top_block_gui):
 
     
         #chan_filt_coeffs = filter.firdes.low_pass_2(1,          # gain
-        #                                            self._sample_rate,  # sampling rate
-        #                                            5e6,        # passband cutoff
-        #                                            4e6,        # transition bw
-        #                                            62)         # stopband attenuation
+        #                                           self._sample_rate,  # sampling rate
+        #                                           3e6,        # passband cutoff
+        #                                           2e6,        # transition bw
+        #                                           62)         # stopband attenuation
 
         #Turn If to baseband and filter.
         #self.chan_filt = filter.freq_xlating_fir_filter_ccf(1,#not sure
