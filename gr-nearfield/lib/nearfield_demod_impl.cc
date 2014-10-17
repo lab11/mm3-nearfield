@@ -420,11 +420,8 @@ int nearfield_demod_impl::work(int noutput_items,
 				demod_data_out.push_back(demod_data[ii]);
 
 			//Push message out with packet data
-			pmt::pmt_t new_message_dict = pmt::make_dict();
-			pmt::pmt_t key = pmt::from_long((long)(0));
 			pmt::pmt_t value = pmt::init_u8vector(demod_data_out.size(), (const uint8_t*)&demod_data_out[0]);
-			new_message_dict = pmt::dict_add(new_message_dict, key, value);
-			pmt::pmt_t new_message = pmt::cons(new_message_dict, pmt::PMT_NIL);
+			pmt::pmt_t new_message = pmt::cons(pmt::PMT_NIL, value);
 			message_port_pub(pmt::mp("frame_out"), new_message);
 			time_t current_time = time(0);
 			char* dt = std::ctime(&current_time);

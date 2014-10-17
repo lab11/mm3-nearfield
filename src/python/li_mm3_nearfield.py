@@ -16,6 +16,10 @@ import wx
 import nearfield
 import time
 
+GATD_HOST = 'inductor.eecs.umich.edu'
+GATD_PORT = '4001'
+GATD_PROFILE_ID = 'N9NaoNAJzi'
+
 import struct
 import sys
 """
@@ -197,8 +201,8 @@ class my_top_block(grc_wxgui.top_block_gui):
         #                                            self._sample_rate)
  	self.mag = blocks.complex_to_mag()
 
-	self.tm_framer = nearfield.nearfield_demod(self._sample_rate, self._down_bitrate, self._down_bitrate_accuracy, self._down_post_bitrate_accuracy, self._pulse_len, self._pulse_len_accuracy, self._post_pulse_len_accuracy, self._packet_len, self._header_len)
-	self.socket_pdu = blocks.socket_pdu("TCP_SERVER", "127.0.0.1", "12912", 10000)
+	self.tm_framer = nearfield.nearfield_demod(self._sample_rate, self._down_bitrate, self._down_bitrate_accuracy, self._down_post_bitrate_accuracy, self._pulse_len, self._pulse_len_accuracy, self._post_pulse_len_accuracy, self._packet_len, self._header_len, GATD_PROFILE_ID)
+	self.socket_pdu = blocks.socket_pdu("UDP_CLIENT", GATD_HOST, GATD_PORT, 10000)
 	self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "pdus")
 
 	self.connect(self.source, self.mag, self.tm_framer)
