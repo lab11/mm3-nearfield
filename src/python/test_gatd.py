@@ -4,7 +4,8 @@ import socket
 import struct
 import random
 
-IP = 'inductor.eecs.umich.edu'
+#IP = 'inductor.eecs.umich.edu'
+IP = 'localhost'
 PORT = 4001
 
 o = False
