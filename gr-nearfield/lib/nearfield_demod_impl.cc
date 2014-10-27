@@ -165,6 +165,8 @@ void nearfield_demod_impl::setSampleRate(float sample_rate){
 	sample_period = 1/SDR_sample_rate;
 }
 
+
+
 int nearfield_demod_impl::work(int noutput_items,
 		gr_vector_const_void_star &input_items,
 		gr_vector_void_star &output_items) {
@@ -419,12 +421,109 @@ int nearfield_demod_impl::work(int noutput_items,
 			for(int ii=0; ii < demod_data.size(); ii++)
 				demod_data_out.push_back(demod_data[ii]);
 
+            uint8_t demod_32_data[32];
+            for(int i = 0; i < 31; i++) {
+                if(i > demod_data.size()) {
+                    demod_32_data[i] = 0;
+                } else {
+                    demod_32_data[i] = demod_data[i];
+                }
+            }
+            uint8_t P0 = 0;
+            uint8_t P1 = 0;
+            uint8_t P2 = 0;
+            uint8_t P3 = 0;
+            uint8_t P4 = 0;
+            uint8_t P5 = 0;
+            
+            if(demod_data.size() < 16) {//11 bit data, 5 bit ECC
+                
+                P1 = demod_32_data[5] ^ demod_32_data[6] ^ demod_32_data[8] ^ demod_32_data[9] ^ demod_32_data[11] ^ demod_32_data[13] ^ demod_32_data[15];
+
+                P2 = demod_32_data[5] ^ demod_32_data[7] ^ demod_32_data[8] ^ demod_32_data[10] ^ demod_32_data[11] ^ demod_32_data[14] ^ demod_32_data[15];
+                
+                P3 = demod_32_data[6] ^ demod_32_data[7] ^ demod_32_data[8] ^ demod_32_data[12] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15];
+                
+                P4 = demod_32_data[9] ^ demod_32_data[10] ^ demod_32_data[11] ^ demod_32_data[12] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15];
+
+                for(int i = 5; i < 16; i++) {
+                    P0 = P0 ^ demod_32_data[i];
+                }
+                P0 = P0 ^ P1 ^ P2 ^ P3 ^ P4;
+
+			    std::cout << "16 : ECC: " << P4 << P3 << P2 << P1 << P0 << std::endl;
+                if(P0 != demod_32_data[0] || P1 != demod_32_data[1] || P2 != demod_32_data[2] || P3 != demod_32_data[3] || P4 != demod_32_data[4]) {
+                    std::cout << "ECC mismatch" << std::endl;
+                } else {
+        			time_t current_time = time(0);
+		         	char* dt = std::ctime(&current_time);
+			        std::cout << "@@@ECC VERIFIED" << std::endl;
+			        std::cout << "SENDING MESSAGE" << std::endl;
+			        std::cout << "@@@" << dt;
+			        d_log_file << "SENDING MESSAGE" << std::endl;
+			        d_log_file << "@@@" << dt;
+			        for(int ii=0; ii < demod_data.size(); ii++){
+				        std::cout << (int)(demod_data[ii]) << ", ";
+				        d_log_file << (int)(demod_data[ii]) << ", ";
+			        }
+			        d_log_file << std::endl;
+			        std::cout << std::endl;
+                }
+           
+            } else if(demod_data.size() > 16 && demod_data.size() < 32) { //26 bit data, 6 bit ECC
+                P1 = demod_32_data[6] ^ demod_32_data[7] ^ demod_32_data[9] ^ demod_32_data[10] ^ demod_32_data[12] ^ demod_32_data[14] ^ demod_32_data[16] ^ demod_32_data[17]
+                        ^ demod_32_data[19] ^ demod_32_data[21] ^ demod_32_data[23] ^ demod_32_data[25] ^ demod_32_data[27] ^ demod_32_data[29] ^ demod_32_data[31];
+
+                P2 = demod_32_data[6] ^ demod_32_data[8] ^ demod_32_data[9] ^ demod_32_data[11] ^ demod_32_data[12] ^ demod_32_data[15] ^ demod_32_data[16] ^ demod_32_data[18]
+                        ^ demod_32_data[19] ^ demod_32_data[22] ^ demod_32_data[23] ^ demod_32_data[26] ^ demod_32_data[27] ^ demod_32_data[30] ^ demod_32_data[31];
+                
+                P3 = demod_32_data[7] ^ demod_32_data[8] ^ demod_32_data[9] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15] ^ demod_32_data[16] ^ demod_32_data[20]
+                        ^ demod_32_data[21] ^ demod_32_data[22] ^ demod_32_data[23] ^ demod_32_data[28] ^ demod_32_data[29] ^ demod_32_data[30] ^ demod_32_data[31];
+                
+                P4 = demod_32_data[10] ^ demod_32_data[11] ^ demod_32_data[12] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15] ^ demod_32_data[16] ^ demod_32_data[24]
+                        ^ demod_32_data[25] ^ demod_32_data[26] ^ demod_32_data[27] ^ demod_32_data[28] ^ demod_32_data[29] ^ demod_32_data[30] ^ demod_32_data[31];
+                
+                P5 = demod_32_data[17] ^ demod_32_data[18] ^ demod_32_data[19] ^ demod_32_data[20] ^ demod_32_data[21] ^ demod_32_data[22] ^ demod_32_data[23] ^ demod_32_data[24]
+                        ^ demod_32_data[25] ^ demod_32_data[26] ^ demod_32_data[27] ^ demod_32_data[28] ^ demod_32_data[29] ^ demod_32_data[30] ^ demod_32_data[31];
+
+                for(int i = 6; i < 32; i++) {
+                    P0 = P0 ^ demod_32_data[i];
+                }
+                P0 = P0 ^ P1 ^ P2 ^ P3 ^ P4 ^ P5;
+
+			    std::cout << "32 : ECC: " << P5 << P4 << P3 << P2 << P1 << P0 << std::endl;
+                if(P0 != demod_32_data[0] || P1 != demod_32_data[1] || P2 != demod_32_data[2] || P3 != demod_32_data[3] || P4 != demod_32_data[4] || P5 != demod_32_data[5]) {
+                    std::cout << "ECC mismatch" << std::endl;
+                } else {
+        			time_t current_time = time(0);
+		         	char* dt = std::ctime(&current_time);
+			        std::cout << "@@@ECC VERIFIED" << std::endl;
+			        std::cout << "SENDING MESSAGE" << std::endl;
+			        std::cout << "@@@" << dt;
+			        d_log_file << "SENDING MESSAGE" << std::endl;
+			        d_log_file << "@@@" << dt;
+			        for(int ii=0; ii < demod_data.size(); ii++){
+				        std::cout << (int)(demod_data[ii]) << ", ";
+				        d_log_file << (int)(demod_data[ii]) << ", ";
+			        }
+			        d_log_file << std::endl;
+			        std::cout << std::endl;
+                }
+ 
+            } else {
+                std::cout << "cannot support more than 6 bits ECC" << std::endl;
+            }
+
 			//Push message out with packet data
 			pmt::pmt_t value = pmt::init_u8vector(demod_data_out.size(), (const uint8_t*)&demod_data_out[0]);
 			pmt::pmt_t new_message = pmt::cons(pmt::PMT_NIL, value);
 			message_port_pub(pmt::mp("frame_out"), new_message);
+
+            
+
 			time_t current_time = time(0);
 			char* dt = std::ctime(&current_time);
+			std::cout << "@@@UNVERIFIED" << std::endl;
 			std::cout << "SENDING MESSAGE" << std::endl;
 			std::cout << "@@@" << dt;
 			d_log_file << "SENDING MESSAGE" << std::endl;
