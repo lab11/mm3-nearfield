@@ -422,13 +422,18 @@ int nearfield_demod_impl::work(int noutput_items,
 				demod_data_out.push_back(demod_data[ii]);
 
             uint8_t demod_32_data[32];
-            for(int i = 0; i < 31; i++) {
-                if(i > demod_data.size()) {
-                    demod_32_data[i] = 0;
-                } else {
-                    demod_32_data[i] = demod_data[i];
-                }
+			//std::cout  << "packet length: " << demod_data.size() << std::endl; 
+			//std::cout << "32 bit data: ";
+            for(int i = 0; i < 32 - demod_data.size(); i++) {
+            	demod_32_data[i] = 0;
+				//std::cout << int(demod_32_data[i]) << " ";
             }
+            for(int i = 32-demod_data.size(); i < 32; i++) {
+            	demod_32_data[i] = demod_data[i - (32 - demod_data.size())];
+				//std::cout << int(demod_32_data[i]) << " ";
+            }
+			//std::cout << std::endl;
+			
             uint8_t P0 = 0;
             uint8_t P1 = 0;
             uint8_t P2 = 0;
@@ -436,24 +441,26 @@ int nearfield_demod_impl::work(int noutput_items,
             uint8_t P4 = 0;
             uint8_t P5 = 0;
             
-            if(demod_data.size() < 16) {//11 bit data, 5 bit ECC
+            if(demod_data.size() <= 16) {//11 bit data, 5 bit ECC
                 
-                P1 = demod_32_data[5] ^ demod_32_data[6] ^ demod_32_data[8] ^ demod_32_data[9] ^ demod_32_data[11] ^ demod_32_data[13] ^ demod_32_data[15];
+                P1 = demod_32_data[31 - 5] ^ demod_32_data[31 - 6] ^ demod_32_data[31 - 8] ^ demod_32_data[31 - 9] ^ demod_32_data[31 - 11] ^ demod_32_data[31 - 13] ^ demod_32_data[31 - 15];
 
-                P2 = demod_32_data[5] ^ demod_32_data[7] ^ demod_32_data[8] ^ demod_32_data[10] ^ demod_32_data[11] ^ demod_32_data[14] ^ demod_32_data[15];
+                P2 = demod_32_data[31 - 5] ^ demod_32_data[31 - 7] ^ demod_32_data[31 - 8] ^ demod_32_data[31 - 10] ^ demod_32_data[31 - 11] ^ demod_32_data[31 - 14] ^ demod_32_data[31 - 15];
                 
-                P3 = demod_32_data[6] ^ demod_32_data[7] ^ demod_32_data[8] ^ demod_32_data[12] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15];
+                P3 = demod_32_data[31 - 6] ^ demod_32_data[31 - 7] ^ demod_32_data[31 - 8] ^ demod_32_data[31 - 12] ^ demod_32_data[31 - 13] ^ demod_32_data[31 - 14] ^ demod_32_data[31 - 15];
                 
-                P4 = demod_32_data[9] ^ demod_32_data[10] ^ demod_32_data[11] ^ demod_32_data[12] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15];
+                P4 = demod_32_data[31 - 9] ^ demod_32_data[31 - 10] ^ demod_32_data[31 - 11] ^ demod_32_data[31 - 12] ^ demod_32_data[31 - 13] ^ demod_32_data[31 - 14] ^ demod_32_data[31 - 15];
 
-                for(int i = 5; i < 16; i++) {
+                for(int i = 0; i < 16 - 5; i++) {
                     P0 = P0 ^ demod_32_data[i];
                 }
                 P0 = P0 ^ P1 ^ P2 ^ P3 ^ P4;
 
-			    std::cout << "16 : ECC: " << P4 << P3 << P2 << P1 << P0 << std::endl;
-                if(P0 != demod_32_data[0] || P1 != demod_32_data[1] || P2 != demod_32_data[2] || P3 != demod_32_data[3] || P4 != demod_32_data[4]) {
-                    std::cout << "ECC mismatch" << std::endl;
+		//std::cout << "16 : ECC: " << int(P4) << " " << int(P3) << " " << 
+		//	int(P2) << " " << int(P1) << " " << int(P0) << std::endl;
+                if(P0 != demod_32_data[31 - 0] || P1 != demod_32_data[31 - 1] || P2 != demod_32_data[31 - 2] || P3 != demod_32_data[31 - 3] || P4 != demod_32_data[31 - 4]) {
+                    //std::cout << "ECC mismatch" << std::endl;
+					std::cout << "...,";
                 } else {
         			time_t current_time = time(0);
 		         	char* dt = std::ctime(&current_time);
@@ -470,30 +477,32 @@ int nearfield_demod_impl::work(int noutput_items,
 			        std::cout << std::endl;
                 }
            
-            } else if(demod_data.size() > 16 && demod_data.size() < 32) { //26 bit data, 6 bit ECC
-                P1 = demod_32_data[6] ^ demod_32_data[7] ^ demod_32_data[9] ^ demod_32_data[10] ^ demod_32_data[12] ^ demod_32_data[14] ^ demod_32_data[16] ^ demod_32_data[17]
-                        ^ demod_32_data[19] ^ demod_32_data[21] ^ demod_32_data[23] ^ demod_32_data[25] ^ demod_32_data[27] ^ demod_32_data[29] ^ demod_32_data[31];
+            } else if(demod_data.size() > 16 && demod_data.size() <= 32) { //26 bit data, 6 bit ECC
+                P1 = demod_32_data[31 - 6] ^ demod_32_data[31 - 7] ^ demod_32_data[31 - 9] ^ demod_32_data[31 - 10] ^ demod_32_data[31 - 12] ^ demod_32_data[31 - 14] ^ demod_32_data[31 - 16] ^ demod_32_data[31 - 17]
+                        ^ demod_32_data[31 - 19] ^ demod_32_data[31 - 21] ^ demod_32_data[31 - 23] ^ demod_32_data[31 - 25] ^ demod_32_data[31 - 27] ^ demod_32_data[31 - 29] ^ demod_32_data[31 - 31];
 
-                P2 = demod_32_data[6] ^ demod_32_data[8] ^ demod_32_data[9] ^ demod_32_data[11] ^ demod_32_data[12] ^ demod_32_data[15] ^ demod_32_data[16] ^ demod_32_data[18]
-                        ^ demod_32_data[19] ^ demod_32_data[22] ^ demod_32_data[23] ^ demod_32_data[26] ^ demod_32_data[27] ^ demod_32_data[30] ^ demod_32_data[31];
+                P2 = demod_32_data[31 - 6] ^ demod_32_data[31 - 8] ^ demod_32_data[31 - 9] ^ demod_32_data[31 - 11] ^ demod_32_data[31 - 12] ^ demod_32_data[31 - 15] ^ demod_32_data[31 - 16] ^ demod_32_data[31 - 18]
+                        ^ demod_32_data[31 - 19] ^ demod_32_data[31 - 22] ^ demod_32_data[31 - 23] ^ demod_32_data[31 - 26] ^ demod_32_data[31 - 27] ^ demod_32_data[31 - 30] ^ demod_32_data[31 - 31];
                 
-                P3 = demod_32_data[7] ^ demod_32_data[8] ^ demod_32_data[9] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15] ^ demod_32_data[16] ^ demod_32_data[20]
-                        ^ demod_32_data[21] ^ demod_32_data[22] ^ demod_32_data[23] ^ demod_32_data[28] ^ demod_32_data[29] ^ demod_32_data[30] ^ demod_32_data[31];
+                P3 = demod_32_data[31 - 7] ^ demod_32_data[31 - 8] ^ demod_32_data[31 - 9] ^ demod_32_data[31 - 13] ^ demod_32_data[31 - 14] ^ demod_32_data[31 - 15] ^ demod_32_data[31 - 16] ^ demod_32_data[31 - 20]
+                        ^ demod_32_data[31 - 21] ^ demod_32_data[31 - 22] ^ demod_32_data[31 - 23] ^ demod_32_data[31 - 28] ^ demod_32_data[31 - 29] ^ demod_32_data[31 - 30] ^ demod_32_data[31 - 31];
                 
-                P4 = demod_32_data[10] ^ demod_32_data[11] ^ demod_32_data[12] ^ demod_32_data[13] ^ demod_32_data[14] ^ demod_32_data[15] ^ demod_32_data[16] ^ demod_32_data[24]
-                        ^ demod_32_data[25] ^ demod_32_data[26] ^ demod_32_data[27] ^ demod_32_data[28] ^ demod_32_data[29] ^ demod_32_data[30] ^ demod_32_data[31];
+                P4 = demod_32_data[31 - 10] ^ demod_32_data[31 - 11] ^ demod_32_data[31 - 12] ^ demod_32_data[31 - 13] ^ demod_32_data[31 - 14] ^ demod_32_data[31 - 15] ^ demod_32_data[31 - 16] ^ demod_32_data[31 - 24]
+                        ^ demod_32_data[31 - 25] ^ demod_32_data[31 - 26] ^ demod_32_data[31 - 27] ^ demod_32_data[31 - 28] ^ demod_32_data[31 - 29] ^ demod_32_data[31 - 30] ^ demod_32_data[31 - 31];
                 
-                P5 = demod_32_data[17] ^ demod_32_data[18] ^ demod_32_data[19] ^ demod_32_data[20] ^ demod_32_data[21] ^ demod_32_data[22] ^ demod_32_data[23] ^ demod_32_data[24]
-                        ^ demod_32_data[25] ^ demod_32_data[26] ^ demod_32_data[27] ^ demod_32_data[28] ^ demod_32_data[29] ^ demod_32_data[30] ^ demod_32_data[31];
+                P5 = demod_32_data[31 - 17] ^ demod_32_data[31 - 18] ^ demod_32_data[31 - 19] ^ demod_32_data[31 - 20] ^ demod_32_data[31 - 21] ^ demod_32_data[31 - 22] ^ demod_32_data[31 - 23] ^ demod_32_data[31 - 24]
+                        ^ demod_32_data[31 - 25] ^ demod_32_data[31 - 26] ^ demod_32_data[31 - 27] ^ demod_32_data[31 - 28] ^ demod_32_data[31 - 29] ^ demod_32_data[31 - 30] ^ demod_32_data[31 - 31];
 
-                for(int i = 6; i < 32; i++) {
+                for(int i = 0; i < 32 - 6; i++) {
                     P0 = P0 ^ demod_32_data[i];
                 }
                 P0 = P0 ^ P1 ^ P2 ^ P3 ^ P4 ^ P5;
 
-			    std::cout << "32 : ECC: " << P5 << P4 << P3 << P2 << P1 << P0 << std::endl;
-                if(P0 != demod_32_data[0] || P1 != demod_32_data[1] || P2 != demod_32_data[2] || P3 != demod_32_data[3] || P4 != demod_32_data[4] || P5 != demod_32_data[5]) {
-                    std::cout << "ECC mismatch" << std::endl;
+			    //std::cout << "32 : ECC: " << int(P5) << " " << int(P4) << " " << 
+				//	int(P3) << " " << int(P2) << " " << int(P1) << " " << int(P0) << std::endl;
+                if(P0 != demod_32_data[31 - 0] || P1 != demod_32_data[31 - 1] || P2 != demod_32_data[31 - 2] || P3 != demod_32_data[31 - 3] || P4 != demod_32_data[31 - 4] || P5 != demod_32_data[31 - 5]) {
+                    //std::cout << "ECC mismatch" << std::endl;
+					std::cout << "..., ";
                 } else {
         			time_t current_time = time(0);
 		         	char* dt = std::ctime(&current_time);
@@ -523,17 +532,17 @@ int nearfield_demod_impl::work(int noutput_items,
 
 			time_t current_time = time(0);
 			char* dt = std::ctime(&current_time);
-			std::cout << "@@@UNVERIFIED" << std::endl;
-			std::cout << "SENDING MESSAGE" << std::endl;
-			std::cout << "@@@" << dt;
-			d_log_file << "SENDING MESSAGE" << std::endl;
-			d_log_file << "@@@" << dt;
-			for(int ii=0; ii < demod_data.size(); ii++){
-				std::cout << (int)(demod_data[ii]) << ", ";
-				d_log_file << (int)(demod_data[ii]) << ", ";
-			}
-			d_log_file << std::endl;
-			std::cout << std::endl;
+			//std::cout << "@@@UNVERIFIED" << std::endl;
+			//std::cout << "SENDING MESSAGE" << std::endl;
+			//std::cout << "@@@" << dt;
+			//d_log_file << "SENDING MESSAGE" << std::endl;
+			//d_log_file << "@@@" << dt;
+			//for(int ii=0; ii < demod_data.size(); ii++){
+			//	std::cout << (int)(demod_data[ii]) << ", ";
+			//	d_log_file << (int)(demod_data[ii]) << ", ";
+			//}
+			//d_log_file << std::endl;
+			//std::cout << std::endl;
 
 			sync = 0;                        // start over looking for sync
 			prf_vec.clear();
