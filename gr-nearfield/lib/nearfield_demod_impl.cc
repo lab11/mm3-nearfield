@@ -460,7 +460,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		//	int(P2) << " " << int(P1) << " " << int(P0) << std::endl;
                 if(P0 != demod_32_data[31 - 0] || P1 != demod_32_data[31 - 1] || P2 != demod_32_data[31 - 2] || P3 != demod_32_data[31 - 3] || P4 != demod_32_data[31 - 4]) {
                     //std::cout << "ECC mismatch" << std::endl;
-					std::cout << "...,";
+					//std::cout << "...,";
                 } else {
         			time_t current_time = time(0);
 		         	char* dt = std::ctime(&current_time);
@@ -502,7 +502,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				//	int(P3) << " " << int(P2) << " " << int(P1) << " " << int(P0) << std::endl;
                 if(P0 != demod_32_data[31 - 0] || P1 != demod_32_data[31 - 1] || P2 != demod_32_data[31 - 2] || P3 != demod_32_data[31 - 3] || P4 != demod_32_data[31 - 4] || P5 != demod_32_data[31 - 5]) {
                     //std::cout << "ECC mismatch" << std::endl;
-					std::cout << "..., ";
+					//std::cout << "..., ";
                 } else {
         			time_t current_time = time(0);
 		         	char* dt = std::ctime(&current_time);
