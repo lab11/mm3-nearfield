@@ -87,6 +87,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
 	max_sample = 0;
+    false_counter = 0;
 	
 
 	pulse_vec.clear();
@@ -214,25 +215,26 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 			
-		/*
-		//Update sample counter for AGC logic
+		
+		//Update sample counter for measuring false pulses
 		sample_ctr++;
 		
 		if(sample_ctr > 1e6){
 		
-			if(max_sample < threshold/1.2){
+			//if(max_sample < threshold/1.2){
 				//threshold /= 1.1;
 		                //threshold = 0.999*threshold + 0.001*in[nn];
 				//std::cout << "threshold decrease: " << threshold << std::endl;
-			}
-		
-
+			//}
 		        //threshold = 0.999*threshold + 0.001*in[nn];
+            
+            std::cout << "# of pulses: " << false_counter << std::endl;
 			sample_ctr = 0;
-			max_sample = 0;
+            false_counter = 0;
+			//max_sample = 0;
 
 		}
-		*/
+		
 		
 
 
@@ -260,6 +262,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		if(sync < header) {
 
 			if(transition > 0) {           // rising pulse
+                false_counter++;
 				
 				//std::cout << "transition > 0, volt = " << current << std::endl; 
 				//std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
@@ -323,7 +326,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				//		(pulse_val_max > pulse_min && pulse_val_max < pulse_max)) {
 					// increment sync counter and pulse vector
 				if(fuzz == 0) {
-					sync = sync+1;              // valid pulse
+					//sync = sync+1;              // valid pulse
 					error = 0;		//leave space for an error
 					//fuzz = 0;
 					pulse_vec.push_back(pulse_val);
