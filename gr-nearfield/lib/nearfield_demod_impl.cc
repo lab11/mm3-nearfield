@@ -38,19 +38,19 @@ float mean(std::vector<float> in_vec){
 	return m;
 }
 
-nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len) {
+nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id) {
 		return gnuradio::get_initial_sptr
-			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, post_bitrate_accuracy, pulse_len, pulse_len_accuracy, post_pulse_len_accuracy, packet_len, header_len));
+			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, post_bitrate_accuracy, pulse_len, pulse_len_accuracy, post_pulse_len_accuracy, packet_len, header_len, gatd_id));
 	}
 
 /*
  * The private constructor
  */
-nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len)
+nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id)
 	: gr::sync_block("nearfield_demod",
 			gr::io_signature::make(1, 1, sizeof(float)),
 			gr::io_signature::make(0, 1, sizeof(float))),
-	  d_log_file("nearfield_log.txt") {
+	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
 	threshold = 0.5;            // threshold set after observing data
@@ -89,6 +89,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	max_sample = 0;
 	
 
+	last_time = time(0);
 	pulse_vec.clear();
 	prf_vec.clear();
 	demod_data.clear();
@@ -412,22 +413,29 @@ int nearfield_demod_impl::work(int noutput_items,
 			}
 		}
 		if(n == N){                            // we've looked for all the data
+			//Prepare outgoing packet for GATD
+			std::vector<uint8_t> demod_data_out;
+			for(int ii=0; ii < d_gatd_id.size(); ii++)
+				demod_data_out.push_back((uint8_t)d_gatd_id[ii]);
+			for(int ii=0; ii < demod_data.size(); ii++)
+				demod_data_out.push_back(demod_data[ii]);
+
 			//Push message out with packet data
-			pmt::pmt_t new_message_dict = pmt::make_dict();
-			pmt::pmt_t key = pmt::from_long((long)(0));
-			pmt::pmt_t value = pmt::init_u8vector(demod_data.size(), (const uint8_t*)&demod_data[0]);
-			new_message_dict = pmt::dict_add(new_message_dict, key, value);
-			pmt::pmt_t new_message = pmt::cons(new_message_dict, pmt::PMT_NIL);
+			pmt::pmt_t value = pmt::init_u8vector(demod_data_out.size(), (const uint8_t*)&demod_data_out[0]);
+			pmt::pmt_t new_message = pmt::cons(pmt::PMT_NIL, value);
 			message_port_pub(pmt::mp("frame_out"), new_message);
+			float prf_length = roundf(mean(prf_vec)/sample_period);
 			time_t current_time = time(0);
+                        double seconds = difftime(current_time, last_time);
+                        last_time = current_time;
 			char* dt = std::ctime(&current_time);
 			std::cout << "SENDING MESSAGE" << std::endl;
-			std::cout << "@@@" << dt;
+			std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf);
+			d_log_file << "SENDING MESSAGE" << std::endl;
+		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf);
 			for(int ii=0; ii < demod_data.size(); ii++){
 				std::cout << (int)(demod_data[ii]) << ", ";
-				d_log_file << "SENDING MESSAGE" << std::endl;
-				d_log_file << "@@@" << dt;
-				d_log_file << (int)(demod_data[ii]);
+				d_log_file << (int)(demod_data[ii]) << ", ";
 			}
 			d_log_file << std::endl;
 			std::cout << std::endl;

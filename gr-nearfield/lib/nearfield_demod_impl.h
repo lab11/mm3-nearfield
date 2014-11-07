@@ -73,9 +73,11 @@ namespace gr {
 	std::vector<uint8_t> demod_data;
 	float sav_pulse;
 	std::ofstream d_log_file;
+	std::string d_gatd_id;
+	time_t last_time;
 
      public:
-      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len);
+      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
       ~nearfield_demod_impl();
 
       // Where all the action really happens
