@@ -430,9 +430,9 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_time = current_time;
 			char* dt = std::ctime(&current_time);
 			std::cout << "SENDING MESSAGE" << std::endl;
-			std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/prf_length);
+			std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf);
 			d_log_file << "SENDING MESSAGE" << std::endl;
-		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/prf_length);
+		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf);
 			for(int ii=0; ii < demod_data.size(); ii++){
 				std::cout << (int)(demod_data[ii]) << ", ";
 				d_log_file << (int)(demod_data[ii]) << ", ";
