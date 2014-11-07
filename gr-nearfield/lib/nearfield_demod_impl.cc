@@ -219,7 +219,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Update sample counter for measuring false pulses
 		sample_ctr++;
 		
-		if(sample_ctr > 1e6){
+		if(sample_ctr > 1e8){
 		
 			//if(max_sample < threshold/1.2){
 				//threshold /= 1.1;
