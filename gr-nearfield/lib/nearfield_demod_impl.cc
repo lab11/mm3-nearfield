@@ -89,6 +89,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	max_sample = 0;
 	
 
+	last_time = time(0);
 	pulse_vec.clear();
 	prf_vec.clear();
 	demod_data.clear();
@@ -423,12 +424,15 @@ int nearfield_demod_impl::work(int noutput_items,
 			pmt::pmt_t value = pmt::init_u8vector(demod_data_out.size(), (const uint8_t*)&demod_data_out[0]);
 			pmt::pmt_t new_message = pmt::cons(pmt::PMT_NIL, value);
 			message_port_pub(pmt::mp("frame_out"), new_message);
+			float prf_length = roundf(mean(prf_vec)/sample_period);
 			time_t current_time = time(0);
+                        double seconds = difftime(current_time, last_time);
+                        last_time = current_time;
 			char* dt = std::ctime(&current_time);
 			std::cout << "SENDING MESSAGE" << std::endl;
-			std::cout << "@@@" << dt;
+			std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/prf_length);
 			d_log_file << "SENDING MESSAGE" << std::endl;
-			d_log_file << "@@@" << dt;
+		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/prf_length);
 			for(int ii=0; ii < demod_data.size(); ii++){
 				std::cout << (int)(demod_data[ii]) << ", ";
 				d_log_file << (int)(demod_data[ii]) << ", ";
