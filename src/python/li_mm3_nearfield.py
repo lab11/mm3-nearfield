@@ -315,7 +315,7 @@ def main():
 	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=10, help="Pulse Length Accuracy (%)")
 	parser.add_option("", "--post-pulse-len-accuracy", type="float", default=10, help="Post-sync Pulse Length Accuracy (%)")
 	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
-	parser.add_option("-n", "--packet-len", type="int", default=28, help="Packet Length (bits")
+	parser.add_option("-n", "--packet-len", type="int", default=12, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
 	parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
 	parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")
