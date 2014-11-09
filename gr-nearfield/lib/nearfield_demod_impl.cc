@@ -87,6 +87,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
 	max_sample = 0;
+
+        unit_time = 60000/16;
+        time_offset = 0.005;
+        window_size = 
 	
 
 	last_time = time(0);
@@ -96,10 +100,36 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         for (int k = 0; k < 100; k++ ) {
         	lastpulses.push(0);
 	}
+        for (int k = 0; k < 100; k++ ) {
+        	lastpulses.push(0);
+	}
         for (int k = 0; k < 7; k++ ) {
         	lastsamples[k] = 0;
 	}
 	energy = 0;
+
+        //init tables
+        distance_table[0] = 0;
+        distance_table[1] = 23;
+        distance_table[2] = 16;
+        distance_table[3] = 20;
+        distance_table[4] = 25;
+        distance_table[5] = 29;
+        distance_table[6] = 27;
+        distance_table[7] = 24;
+        distance_table[8] = 22;
+        distance_table[9] = 28;
+        distance_table[10] = 17;
+        distance_table[11] = 21;
+        distance_table[12] = 30;
+        distance_table[13] = 18;
+        distance_table[14] = 26;
+        distance_table[15] = 19;
+        
+        sum_table[i] = 0;
+        for(int i = 1; i < 16; i++){
+            sum_table[i] = sum_table[i-1] + distance_table[i];
+        }
 
 	message_port_register_out(pmt::mp("frame_out"));
 }
@@ -182,6 +212,8 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Local non-persistent variables
 		float rx_data;
 		float transition;
+
+                //do matched filter first
 		float past = lastpulses.front();
 		lastpulses.pop();
 		energy = energy + in[nn] * in[nn] - past * past;
@@ -214,7 +246,38 @@ int nearfield_demod_impl::work(int noutput_items,
 		current = (lastsamples[0] * 0.1156 + lastsamples[1] * 0.1764 + lastsamples[2] * 0.324 + 
 			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
-			
+		
+                //insert into the deque
+		matched_pulses.pop_back();
+	        matched_pulses.push_front(current);
+
+                
+                for(int i = 0; i < 40; i++){
+                    for(j = 0; j < (345 * unit_time * (1+0.0025*i) + jitter + 345 * 0.0025 * unit_time; j++){
+                        for(k = 0; k < 15; k++) {
+                            if(k == 0 && j < 2 * jitter + 1){ 
+                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[j];
+                            } else if(k!=0 && 
+                                ((j > distance_table[k] * unit_time) && 
+                                j < distance_table[k] * unit_time * (0.0025 * sum_table[k] + 1)) + jitter){
+                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[j];
+                            } else {
+                                long_matched_out[i] = long_matched_out[i];
+                            }    
+                        }
+                    }
+                }
+
+
+                for(int i = 0; i < 40; i++){
+                    if(long_matched_out[i] > threshold) 
+
+
+
+
+
+
+
 		/*
 		//Update sample counter for AGC logic
 		sample_ctr++;
@@ -234,9 +297,8 @@ int nearfield_demod_impl::work(int noutput_items,
 
 		}
 		*/
+
 		
-
-
 		
 
 		//threshold = 0.999*threshold + 0.001*current;
