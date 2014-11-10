@@ -69,9 +69,10 @@ namespace gr {
         int unit_time;
         float time_offset;
         float window_size;
-	std::deque<float> matched_pulses;
+	std::deque<float> matched_pulses[40];
 	float lastsamples[8];
 	float energy;
+	float all_pulse_energy[40];
 	int sample_ctr;
 	std::vector<float> pulse_vec;
 	std::vector<float> prf_vec;
@@ -80,7 +81,7 @@ namespace gr {
 	std::ofstream d_log_file;
 	std::string d_gatd_id;
 	time_t last_time;
-        float long_matched_out[32];
+        float long_matched_out[40];
         int distance_table[16];
         int sum_table[16];
 

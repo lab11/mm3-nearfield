@@ -106,6 +106,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         for (int k = 0; k < 7; k++ ) {
         	lastsamples[k] = 0;
 	}
+	for (int k = 0; k < 40; k++){
+ 		for(j = 0; j < (345 * unit_time * (1+0.0025*i) + 2 * jitter + 345 * 0.0025 * unit_time; j++){
+		matched_pulses[k].push(0);
+		}
+		all_pulse_energy[k] = 0;
+	}
 	energy = 0;
 
         //init tables
@@ -248,19 +254,23 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 		
                 //insert into the deque
-		matched_pulses.pop_back();
-	        matched_pulses.push_front(current);
+		for(int i = 0; i< 40; i++){
+			float last = matched_pulses[i].back();
+			all_pulse_energy = all_pulse_energy + current * current - last * last;
+			matched_pulses[i].pop_back();
+	        	matched_pulses[i].push_front(current);
+		}
 
-                
+               	 
                 for(int i = 0; i < 40; i++){
-                    for(j = 0; j < (345 * unit_time * (1+0.0025*i) + jitter + 345 * 0.0025 * unit_time; j++){
+                    for(j = 0; j < matched_pulses[i].size; j++){
                         for(k = 0; k < 15; k++) {
-                            if(k == 0 && j < 2 * jitter + 1){ 
-                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[j];
+                            if(k == 0 && j < 2 * jitter + 1){
+                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[i][j];
                             } else if(k!=0 && 
                                 ((j > distance_table[k] * unit_time) && 
                                 j < distance_table[k] * unit_time * (0.0025 * sum_table[k] + 1)) + jitter){
-                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[j];
+                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[i][j];
                             } else {
                                 long_matched_out[i] = long_matched_out[i];
                             }    
@@ -270,7 +280,10 @@ int nearfield_demod_impl::work(int noutput_items,
 
 
                 for(int i = 0; i < 40; i++){
-                    if(long_matched_out[i] > threshold) 
+                    if(long_matched_out[i]/sqrt(all_pulse_energy[i]) > threshold) {
+			cout << "detected with: " << i << std::endl;
+		    }
+		} 
 
 
 
