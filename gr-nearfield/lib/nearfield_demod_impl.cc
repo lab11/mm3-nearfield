@@ -88,10 +88,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	n = 0;              // counter for N
 	max_sample = 0;
 
-        unit_time = 60000/16;
-        time_offset = 0.005;
-        window_size = 
-	
+        unit_time = 50000/(16*5);
+        time_offset = 0.0025;
+	jitter = 5;
+	sub_sample_counter = 0;	
 
 	last_time = time(0);
 	pulse_vec.clear();
@@ -104,15 +104,24 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         	lastpulses.push(0);
 	}
         for (int k = 0; k < 7; k++ ) {
-        	lastsamples[k] = 0;
+        	lastsamples.push_front(0);
 	}
 	for (int k = 0; k < 40; k++){
- 		for(j = 0; j < (345 * unit_time * (1+0.0025*i) + 2 * jitter + 345 * 0.0025 * unit_time; j++){
-		matched_pulses[k].push(0);
+
+		//std::cout << "size of buffer[" << k << "] = " << (345 * unit_time * (1+0.0025*k) + 2 * jitter + 345 * 0.0025 * unit_time) << std::endl; 
+ 		for(int j = 0; j < (345 * unit_time * (1+0.0025*k) + 2 * jitter + 345 * 0.0025 * unit_time); j++){
+
+		matched_pulses[k].push_front(0);
 		}
 		all_pulse_energy[k] = 0;
+
+		//std::cout << "size of buffer[" << k << "] = " << matched_pulses[k].size() << std::endl; 
 	}
 	energy = 0;
+        for(int i = 0; i < 40; i++){
+		long_matched_out[i] = 0;               	 
+	}
+
 
         //init tables
         distance_table[0] = 0;
@@ -131,10 +140,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         distance_table[13] = 18;
         distance_table[14] = 26;
         distance_table[15] = 19;
-        
-        sum_table[i] = 0;
+       
+	start = 0; 
+        sum_table[0] = 0;
         for(int i = 1; i < 16; i++){
             sum_table[i] = sum_table[i-1] + distance_table[i];
+		//std::cout << sum_table[i] << std::endl;
         }
 
 	message_port_register_out(pmt::mp("frame_out"));
@@ -219,15 +230,23 @@ int nearfield_demod_impl::work(int noutput_items,
 		float rx_data;
 		float transition;
 
+
                 //do matched filter first
 		float past = lastpulses.front();
 		lastpulses.pop();
 		energy = energy + in[nn] * in[nn] - past * past;
 		lastpulses.push(in[nn]);
+		/*
 		for(int m=0; m < 7; m++){
 			lastsamples[m] = lastsamples[m+1];
 		}
-		lastsamples[7] = in[nn];
+		*/
+		lastsamples.pop_front();
+		lastsamples.push_back(in[nn]);
+		/*
+		for (std::deque<float>::iterator it = lastsamples.begin(); it!=lastsamples.end(); ++it)
+    				std::cout << ' ' << *it;
+		*/
 		//std::cout << "in: " << in[nn-filt_count] << std::endl;	
 		//float energy_template = 4.5211;
 		//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
@@ -253,37 +272,101 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 		
+		//current = in[nn];
+		float max_current = 0;
+		sub_sample_counter++;
+		if(in[nn] > max_current){
+			max_current = in[nn];
+		}
+		current = max_current;
                 //insert into the deque
+		//std::cout << "pushing: " << current << ", poping: " << matched_pulses[0].back() << std::endl;
+		if(sub_sample_counter == 5){
+			sub_sample_counter = 0;
+		float last[40];
+		for(int i = 0; i < 40; i++){
+			last[i] = 0;
+		}
 		for(int i = 0; i< 40; i++){
-			float last = matched_pulses[i].back();
-			all_pulse_energy = all_pulse_energy + current * current - last * last;
-			matched_pulses[i].pop_back();
-	        	matched_pulses[i].push_front(current);
+			last[i] = matched_pulses[i].front();
+			all_pulse_energy[i] = all_pulse_energy[i] + current * current - last[i] * last[i];
+			matched_pulses[i].pop_front();
+	        	matched_pulses[i].push_back(current);
 		}
 
-               	 
                 for(int i = 0; i < 40; i++){
-                    for(j = 0; j < matched_pulses[i].size; j++){
-                        for(k = 0; k < 15; k++) {
+                    //for(int j = 0; j < matched_pulses[i].size(); j++){
+                        for(int k = 0; k < 16; k++) {
+			    /*	
                             if(k == 0 && j < 2 * jitter + 1){
-                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[i][j];
+				if(matched_pulses[i][j] != 0 && i == 0) {
+				//std::cout << "1: [" << i << "][" << j << "][" << k << "] = " << matched_pulses[i][j] << std::endl;
+				}
+                                long_matched_out[i] = long_matched_out[i] + matched_pulses[i][j] * matched_pulses[i][j];
                             } else if(k!=0 && 
                                 ((j > distance_table[k] * unit_time) && 
-                                j < distance_table[k] * unit_time * (0.0025 * sum_table[k] + 1)) + jitter){
-                                long_matched_out[i] = long_matched_out[i] + matcher_pulses[i][j];
+                                (j < distance_table[k] * unit_time * (0.0025 * sum_table[k] + 1) + jitter))){
+				if(matched_pulses[i][j] != 0 && i == 0) {
+				//std::cout << "2: [" << i << "][" << j << "][" << k << "] = " << matched_pulses[i][j] << std::endl;
+				}
+                                long_matched_out[i] = long_matched_out[i] + matched_pulses[i][j] * matched_pulses[i][j];
                             } else {
-                                long_matched_out[i] = long_matched_out[i];
-                            }    
+                                //long_matched_out[i] = long_matched_out[i];
+                            }
+			    */
+			    if(k == 0) {
+				/*
+				if(i == 0) {
+				//std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
+				std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
+					<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
+					matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+				}
+				*/
+				long_matched_out[i] = long_matched_out[i] - 
+							last[i] * last[i] + 
+							matched_pulses[i][2 * jitter] * matched_pulses[i][2 * jitter];
+			    }
+			    else if(k > 0 && k <= 15) {
+				
+				//std::cout << "k = " << k << ", insert: " << (1+0.0025*i) * unit_time * sum_table[k] 
+				//		<< ", delete: " << (1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 0.0025 * unit_time * sum_table[k] << std::endl;
+				long_matched_out[i] = long_matched_out[i] - 
+							matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] - 1)] * 
+							matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] - 1)] +
+							(matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+							0.0025 * unit_time * sum_table[k])]) * 
+							(matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+							0.0025 * unit_time * sum_table[k])]);
+				}
+
+				    
                         }
-                    }
+                    //}
                 }
+		//std::cout << std::endl;
+		
+		if(matched_pulses[39].front() != 0 && start == 0) {
+			//std::cout << "filling buffers done" << std::endl;
+			start = 1;
+		}
+		if(start == 1){
+			//std::cout << "matched: " << long_matched_out[0] << "energy: " << sqrt(all_pulse_energy[0]) << std::endl;
+			for(int i = 0; i < 40; i++){
+				std::cout << long_matched_out[i]/all_pulse_energy[i] << ";";
+			}
+			std::cout << std::endl;
+		}
 
-
+		}
+		/*
                 for(int i = 0; i < 40; i++){
                     if(long_matched_out[i]/sqrt(all_pulse_energy[i]) > threshold) {
-			cout << "detected with: " << i << std::endl;
+			std::cout << "detected with: " << i << std::endl;
+			
 		    }
-		} 
+		}
+		*/ 
 
 
 
