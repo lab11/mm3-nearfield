@@ -88,9 +88,9 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	n = 0;              // counter for N
 	max_sample = 0;
 
-        unit_time = 50000/(16*5);
+        unit_time = 50000/(16 * 5);
         time_offset = 0.0025;
-	jitter = 5;
+	jitter = 4;
 	sub_sample_counter = 0;	
 
 	last_time = time(0);
@@ -147,6 +147,17 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
             sum_table[i] = sum_table[i-1] + distance_table[i];
 		//std::cout << sum_table[i] << std::endl;
         }
+
+	for(int i = 0; i< 40; i++){
+		for(int j = 0; j < 16; j++) {
+			if(j == 0) {
+				window_length[i] = 2*jitter;
+			} else {
+				window_length[i] += int((1+0.0025*i) * unit_time * sum_table[j] + (2 * jitter - 1) + 
+						0.0025 * unit_time * sum_table[j]) - int((1+0.0025*i) * unit_time * sum_table[j]);
+			}
+		}
+	}
 
 	message_port_register_out(pmt::mp("frame_out"));
 }
@@ -272,13 +283,16 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 		
-		//current = in[nn];
+
 		float max_current = 0;
+		float average_current = 0;
 		sub_sample_counter++;
 		if(in[nn] > max_current){
 			max_current = in[nn];
+			average_current += in[nn];
 		}
 		current = max_current;
+		current = average_current;
                 //insert into the deque
 		//std::cout << "pushing: " << current << ", poping: " << matched_pulses[0].back() << std::endl;
 		if(sub_sample_counter == 5){
@@ -353,7 +367,9 @@ int nearfield_demod_impl::work(int noutput_items,
 		if(start == 1){
 			//std::cout << "matched: " << long_matched_out[0] << "energy: " << sqrt(all_pulse_energy[0]) << std::endl;
 			for(int i = 0; i < 40; i++){
-				std::cout << long_matched_out[i]/all_pulse_energy[i] << ";";
+				std::cout << (long_matched_out[i] - 
+					(all_pulse_energy[i] * window_length[i])/matched_pulses[i].size())/
+					(all_pulse_energy[i] - long_matched_out[i]) << ";";
 			}
 			std::cout << std::endl;
 		}
