@@ -88,8 +88,8 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	n = 0;              // counter for N
 	max_sample = 0;
 
-        unit_time = 212500/(16 * 5);
-        time_offset = 0.0025;
+    unit_time = 212500/(16 * 5);
+    time_offset = 0.0025;
 	jitter = 4;
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -98,6 +98,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	pulse_vec.clear();
 	prf_vec.clear();
 	demod_data.clear();
+	noise_power = 0;
         for (int k = 0; k < 100; k++ ) {
         	lastpulses.push(0);
 	}
@@ -111,16 +112,18 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
 		//std::cout << "size of buffer[" << k << "] = " << (345 * unit_time * (1+0.0025*k) + 2 * jitter + 345 * 0.0025 * unit_time) << std::endl; 
  		for(int j = 0; j < (345 * unit_time * (1+0.0025*k) + 2 * jitter + 345 * 0.0025 * unit_time); j++){
-
-		matched_pulses[k].push_front(0);
+			matched_pulses[k].push_front(0);
 		}
+
+
 		all_pulse_energy[k] = 0;
 
 		//std::cout << "size of buffer[" << k << "] = " << matched_pulses[k].size() << std::endl; 
 	}
 	energy = 0;
         for(int i = 0; i < 40; i++){
-		long_matched_out[i] = 0;               	 
+		long_matched_out[i] = 0;     
+        aggregated_header[i] = 0;
 	}
 
 
@@ -243,7 +246,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		float transition;
 
 
-                //do matched filter first
+        //do matched filter first
 		float past = lastpulses.front();
 		lastpulses.pop();
 		energy = energy + in[nn] * in[nn] - past * past;
@@ -286,359 +289,179 @@ int nearfield_demod_impl::work(int noutput_items,
 		
 
 		sub_sample_counter++;
-		if(in[nn] > max_current){
+    	if(in[nn] > max_current){
 			max_current = in[nn];
-			avg_current += in[nn];
-		}
+	    	avg_current += in[nn];
+        }
 
-		//current = average_current;
-                //insert into the deque
-		//std::cout << "pushing: " << current << ", poping: " << matched_pulses[0].back() << std::endl;
-		if(sub_sample_counter == 5){
-			sub_sample_counter = 0;
-			current = max_current;
-			max_current = 0;
-			avg_current = 0;
-		float last[40];
-		for(int i = 0; i < 40; i++){
-			last[i] = 0;
-		}
-		for(int i = 0; i< 40; i++){
-			last[i] = matched_pulses[i].front();
-			all_pulse_energy[i] = all_pulse_energy[i] + current * current - last[i] * last[i];
-			matched_pulses[i].pop_front();
-	        	matched_pulses[i].push_back(current);
-		}
-
+		    //current = average_current;
+            //insert into the deque
+		    //std::cout << "pushing: " << current << ", poping: " << matched_pulses[0].back() << std::endl;
+    	if(sub_sample_counter == 5){
+    		sub_sample_counter = 0;
+	    	current = max_current;
+		    max_current = 0;
+    		avg_current = 0;
+            if(sync == 0) {
+		    	float last[40];
+		    	for(int i = 0; i < 40; i++){
+			    	last[i] = 0;
+			    }
+    			for(int i = 0; i< 40; i++){
+	    			last[i] = matched_pulses[i].front();
+		    		all_pulse_energy[i] = all_pulse_energy[i] + current * current - last[i] * last[i];
+			    	matched_pulses[i].pop_front();
+		            matched_pulses[i].push_back(current);
+    			}
+    
                 for(int i = 0; i < 40; i++){
                     //for(int j = 0; j < matched_pulses[i].size(); j++){
-                        for(int k = 0; k < 16; k++) {
-			    /*	
-                            if(k == 0 && j < 2 * jitter + 1){
-				if(matched_pulses[i][j] != 0 && i == 0) {
-				//std::cout << "1: [" << i << "][" << j << "][" << k << "] = " << matched_pulses[i][j] << std::endl;
-				}
-                                long_matched_out[i] = long_matched_out[i] + matched_pulses[i][j] * matched_pulses[i][j];
-                            } else if(k!=0 && 
-                                ((j > distance_table[k] * unit_time) && 
-                                (j < distance_table[k] * unit_time * (0.0025 * sum_table[k] + 1) + jitter))){
-				if(matched_pulses[i][j] != 0 && i == 0) {
-				//std::cout << "2: [" << i << "][" << j << "][" << k << "] = " << matched_pulses[i][j] << std::endl;
-				}
-                                long_matched_out[i] = long_matched_out[i] + matched_pulses[i][j] * matched_pulses[i][j];
-                            } else {
-                                //long_matched_out[i] = long_matched_out[i];
-                            }
-			    */
-			    if(k == 0) {
-				/*
-				if(i == 0) {
-				//std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
-				std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
-					<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
-					matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
-				}
-				*/
-				long_matched_out[i] = long_matched_out[i] - 
-							last[i] * last[i] + 
-							matched_pulses[i][2 * jitter] * matched_pulses[i][2 * jitter];
-			    }
-			    else if(k > 0 && k <= 15) {
-				
-				//std::cout << "k = " << k << ", insert: " << (1+0.0025*i) * unit_time * sum_table[k] 
-				//		<< ", delete: " << (1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 0.0025 * unit_time * sum_table[k] << std::endl;
-				long_matched_out[i] = long_matched_out[i] - 
-							matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] - 1)] * 
-							matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] - 1)] +
-							(matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-							0.0025 * unit_time * sum_table[k])]) * 
-							(matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-							0.0025 * unit_time * sum_table[k])]);
-				}
-
-				    
-                        }
-                    //}
+                    for(int k = 0; k < 16; k++) {
+		    	    	if(k == 0) {
+					    	/*
+						    if(i == 0) {
+						    //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
+    						std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
+	    						<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
+		    					matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+			    			}
+				    		*/
+					    	long_matched_out[i] = long_matched_out[i] - 
+						    			last[i] * last[i] + 
+							    		matched_pulses[i][2 * jitter] * matched_pulses[i][2 * jitter];
+					    }
+    				    else if(k > 0 && k <= 15) {
+	    				
+		    			//std::cout << "k = " << k << ", insert: " << (1+0.0025*i) * unit_time * sum_table[k] 
+			    		//		<< ", delete: " << (1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 0.0025 * unit_time * sum_table[k] << std::endl;
+				    		long_matched_out[i] = long_matched_out[i] - 
+					    			matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] - 1)] * 
+						    		matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] - 1)] +
+							    	(matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+								    0.0025 * unit_time * sum_table[k])]) * 
+								    (matched_pulses[i][int((1+0.0025*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+								    0.0025 * unit_time * sum_table[k])]);
+				    	}
+                    }                
                 }
-		//std::cout << std::endl;
-		
-		if(matched_pulses[39].front() != 0 && start == 0) {
-			//std::cout << "filling buffers done" << std::endl;
-			start = 1;
-		}
-		if(start == 1){
-			//std::cout << "matched: " << long_matched_out[0] << "energy: " << sqrt(all_pulse_energy[0]) << std::endl;
-			for(int i = 0; i < 40; i++){
-				std::cout << (long_matched_out[i] - 
-					(all_pulse_energy[i] * window_length[i])/matched_pulses[i].size())/
-					(all_pulse_energy[i] - long_matched_out[i]) << ";";
-			}
-			std::cout << std::endl;
-		}
-
-		}
-		/*
-                for(int i = 0; i < 40; i++){
-                    if(long_matched_out[i]/sqrt(all_pulse_energy[i]) > threshold) {
-			std::cout << "detected with: " << i << std::endl;
+		    	//std::cout << std::endl;
 			
-		    }
-		}
-		*/ 
+    			if(matched_pulses[39].front() != 0 && start == 0) {
+	    			//std::cout << "filling buffers done" << std::endl;
+		    		start = 1;
+			    }
 
 
+    			//dump data out
+	    			//std::cout << "matched: " << long_matched_out[0] << "energy: " << sqrt(all_pulse_energy[0]) << std::endl;
+			   	noise_power = (all_pulse_energy[39] - long_matched_out[39])/(matched_pulses[39].size() - window_length[39]);
+		    	for(int i = 0; i < 40; i++){
+		    		/*
+                    aggregated_header[i] = (long_matched_out[i] - 
+    						(all_pulse_energy[i] * window_length[i])/matched_pulses[i].size())/
+	    					(all_pulse_energy[i] - long_matched_out[i]);
+	    			*/
+                    aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i])/(noise_power * window_length[i]);	    					
+                    if(aggregated_header[i] > max_header_response){
+			            max_header_response = aggregated_header[i];
+			            time_offset = i;
+                    }
+	    		    if(start == 1){
+		    			std::cout << aggregated_header[i] << ";";
+			    	}
+    			}
 
+                if(start == 1) {
+		    		std::cout << std::endl;
+                }
+                if(max_header_response[i] > threshold) { 
+                    sync = 1;
+                    pos = 0;
+                }
+            }
+    
+            //header identified, find the data
+            if(sync == 1) {
+	            if(pos <= (((1+0.0025*time_offset) * unit_time * 16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * (N-1)))){
+	            	for(int i = 0; i < N; i++){
+	            		if(pos >= (((1+0.0025*time_offset) * unit_time * 16) * 0.95 + ((1+0.0025*time_offset) * unit_time * 16 * i))&&
+	            		 	pos <= (((1+0.0025*time_offset) * unit_time * 16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * i))){
+	            			data_energy[i] = current * current + data_energy[i]; 
+	            		}
+	            	}
+	            	pos++;
+	            }
+	            else {
+	            	for(int i = 0; i < N; i++) {
+	            		if((data_energy[i] - (noise_power * (1+0.0025*time_offset) * unit_time * 16 * 0.1))/
+	            			(noise_power * (1+0.0025*time_offset) * unit_time * 16 * 0.1) > threshold_sync){
+								demod_data.push_back(1);
+								n++;
+	            		} else {
+								demod_data.push_back(0);
+								n++;
+	            		}
+	            	}
+	            }
+            }
 
+            //got all data
+			if(n == N){                            // we've looked for all the data
+				//Prepare outgoing packet for GATD
+				std::vector<uint8_t> demod_data_out;
+				for(int ii=0; ii < d_gatd_id.size(); ii++)
+					demod_data_out.push_back((uint8_t)d_gatd_id[ii]);
+				for(int ii=0; ii < demod_data.size(); ii++)
+					demod_data_out.push_back(demod_data[ii]);
 
-
-
-		/*
-		//Update sample counter for AGC logic
-		sample_ctr++;
-		
-		if(sample_ctr > 1e6){
-		
-			if(max_sample < threshold/1.2){
-				//threshold /= 1.1;
-		                //threshold = 0.999*threshold + 0.001*in[nn];
-				//std::cout << "threshold decrease: " << threshold << std::endl;
-			}
-		
-
-		        //threshold = 0.999*threshold + 0.001*in[nn];
-			sample_ctr = 0;
-			max_sample = 0;
-
-		}
-		*/
-
-		
-		
-
-		//threshold = 0.999*threshold + 0.001*current;
-	
-		// STEP 1 --------------------------------------------------------------
-		//std::cout << "volt: " << in[nn] << ", threshold: " << threshold << std::endl;
-		if(current > threshold){
-			//max_sample = (current > max_sample) ? current : max_sample;
-			rx_data = 1;
-			//sample_ctr = 0;
-			//threshold = 0.999*threshold + 0.001*in[nn];             // increment threshold since we're probably picking up noise
-		}else
-			rx_data = 0;
-	
-		// STEP 2 --------------------------------------------------------------
-		if (sync > header) {
-			//std::cout << "sync > header, no possible!!!!!!!!!!!!!!!!" << std::endl;
-			sync = 0;
-		}
-		transition = rx_data - last_data;     // see if we are at an edge of a pulse
-		// NOT SYNCHRONIZED YET
-		if(sync < header) {
-
-			if(transition > 0) {           // rising pulse
-				
-				//std::cout << "transition > 0, volt = " << current << std::endl; 
-				//std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
-				//std::cout << "prf_min: " << prf_min << "prf_max: " << prf_max << std::endl;
-				//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
-				//std::cout << "increase threshold to: " << threshold << std::endl; 
-
-				 
-				// check for prf
-				if(sync >= 1){
-					float prf_val = prf_count*sample_period;
-					if(prf_val > prf_min && prf_val < prf_max){
-						prf_vec.push_back(prf_val);
-						//std::cout << "sync valid " << sync << std::endl;
-						fuzz = 0;
-						//std::cout << "prf_count: " << prf_count << ", prf_val: " << prf_count*sample_period << std::endl;
-					} else if (prf_val <= prf_min){
-						fuzz = 1;	
-						//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
-						//std::cout << "tolerant 1 fuzz " << std::endl;
-						//std::cout << "threshold increase: " << threshold << std::endl;
-
-						prf_count = last_prf_count;
-
-					} else {
-						sync = 1;                     // reset the sync counter
-						valid_count = 0;
-						prf_vec.clear();                 // reset prf vector
-						pulse_vec.clear();               // reset pulse vector
-						fuzz = 1;						
-						//threshold *= 1.1;
-						//threshold = 0.95*threshold + 0.05*current;             // increment threshold since we're probably picking up noise
-						//std::cout << "sync abandoned " << std::endl;
-
-						//std::cout << "threshold increase: " << threshold << std::endl;
-						//std::cout << "clear, valid_coun: " << valid_count << ", sync: " << sync << std::endl; 
-					}	
-					
-					//Update last_prf for every header bit
-					last_prf = prf_val;
-				} else {
-					fuzz = 0;
+				//Push message out with packet data
+				pmt::pmt_t value = pmt::init_u8vector(demod_data_out.size(), (const uint8_t*)&demod_data_out[0]);
+				pmt::pmt_t new_message = pmt::cons(pmt::PMT_NIL, value);
+				message_port_pub(pmt::mp("frame_out"), new_message);
+				float prf_length = roundf(mean(prf_vec)/sample_period);
+				time_t current_time = time(0);
+	            double seconds = difftime(current_time, last_time);
+	            last_time = current_time;
+				char* dt = std::ctime(&current_time);
+				std::cout << "SENDING MESSAGE" << std::endl;
+				std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+				d_log_file << "SENDING MESSAGE" << std::endl;
+			        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+				for(int ii=0; ii < demod_data.size(); ii++){
+					std::cout << (int)(demod_data[ii]) << ", ";
+					d_log_file << (int)(demod_data[ii]) << ", ";
 				}
-				last_prf_count = prf_count;       
-				prf_count = 0; 
+				d_log_file << std::endl;
+				std::cout << std::endl;
 
-			} else if(transition < 0) {       // falling edge of pulse
-				//std::cout << "transition < 0, volt = " << current << std::endl;
-				// determine if pulse is valid or not
-				float pulse_val = pulse_count*sample_period;
-		                //float pulse_val_min = (pulse_count - 1) * sample_period; 
-		                //float pulse_val_max = (pulse_count + 1) * sample_period; 
-				
-				//Update last_pulse for every header bit
-				if(pulse_count > 1)
-					last_pulse = pulse_val;
-				//std::cout << "pulse_count: " << pulse_count << ", pulse_val: " << pulse_val << std::endl;
-				//std::cout << "pulse_min: " << pulse_min << ", pulse_max: " << pulse_max << std::endl;
-				
-				//if((pulse_val_min > pulse_min && pulse_val_min < pulse_max) || 
-				//		(pulse_val_max > pulse_min && pulse_val_max < pulse_max)) {
-					// increment sync counter and pulse vector
-				if(fuzz == 0) {
-					sync = sync+1;              // valid pulse
-					error = 0;		//leave space for an error
-					//fuzz = 0;
-					pulse_vec.push_back(pulse_val);
-					pulse_count = 0;
-					//if (pulse_val > pulse_min && pulse_val < pulse_max) {
-				//valid_count = valid_count + 1;
-					//std::cout << "accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
-				} else {
-				//ignore
-				}
-				//} else {
-						//std::cout << "sudo accept, sync count: " << sync << ", valid_count: " << valid_count << std::endl;
-					//}
-				//} else {				
-			 		//if (error == 0 && sync >= 1 ) {	
-				//		//std::cout << "tolerant 1 error!!!" << std::endl;
-				//		error = + 1;
-				//		prf_count = last_prf_count + pulse_count;
-				//		pulse_count = 0;
-				//	} else {
-				//		pulse_count = 0;
-				//		sync = 0;
-				//		error = 0;
-				//		valid_count = 0;
-				//		std::cout << "clear, valid_counter: " << valid_count << ", sync: " << sync << std::endl;
-				//	}
-				//}
-			} else {    // no transition
-				if(rx_data == 1){
-					pulse_count = pulse_count+1;
-				}
-				if(prf_count < 1000000) {
-					prf_count = prf_count+1;
-				} else {
-					prf_count = 0;
-				}
-			}
-			last_data = rx_data;
-		}
-		// SYNCHRONIZED
-		if(sync == header) {
-			if(n > N) {
-				//std::cout << "error!!! n > 28!!!" << std::endl;
+				sync = 0;                        // start over looking for sync
+				prf_vec.clear();
+				pulse_vec.clear();
+				demod_data.clear();
+				prf_count = 0;
+				pulse_count = 0;
 				n = 0;
-			}
-			error = 0;
-			fuzz = 1;
-
-			// find average pulse width and prf
-			float prf_length = roundf(mean(prf_vec)/sample_period);
-			// using this, demodulate the next N bits
-			// right after last sync pulse is a prf window
-			float prf_length_min = roundf(prf_length - prf_length*d_post_bitrate_accuracy/1e2);
-			float prf_length_max = roundf(prf_length + prf_length*d_post_bitrate_accuracy/1e2);
-			float prf_window = prf_length_max - prf_length_min;
-			// advance to the edge of the prf_min window and look for a pulse
-			// anywhere in the prf_max-prf_min frame.
-			// then return to prf_length and repeat.
-			if(sync_prf < prf_length_min) {         // don't care until we get to the point where a pulse might come
-				sync_prf = sync_prf + 1;
-			} else {                                 // start looking for a pulse (we are in the prf window)
-				sync_prf2 = sync_prf2 + 1;       // do this for prf window duration
-			}
-			if(rx_data == 1) {
-				sync_pulse = sync_pulse + 1; // might be a pulse
-			} else {
-				//if(sync_pulse >= pulse_length_min && sync_pulse <= pulse_length_max) {     // valid pulse
-				if(sync_pulse >= 2) {     // valid pulse
-					valid_pulse = 1;
-					sav_pulse = sync_pulse;
-				}
-				//std::cout << "pulse too short, recognized as zero" << std::endl;
-				sync_pulse = 0;              // reset
-			}
-			if(valid_pulse == 1) {              // we found a pulse
-				demod_data.push_back(1);
-				n = n + 1;
-				sync_prf = sav_pulse;        // prf is defined as rising edge of pulse to the next rising edge of pulse
+				sync_prf = 0;
 				sync_prf2 = 0;
-				valid_pulse = 0;             // reset
-			} else if(sync_prf2 == prf_window) {   // ran through whole prf window w/o finding pulse
-				demod_data.push_back(0);
-				n = n + 1;
-				sync_prf = prf_length_max - prf_length;      // don't set to 0...reset to middle of window for timing
-				sync_prf2 = 0;
+				sync_pulse = 0;
+				valid_pulse = 0;
+				valid_count = 0;
+				//std::cout << "found all bits, clear valid_counter: " << valid_count << std::endl;
 			}
-		}
-		if(n == N){                            // we've looked for all the data
-			//Prepare outgoing packet for GATD
-			std::vector<uint8_t> demod_data_out;
-			for(int ii=0; ii < d_gatd_id.size(); ii++)
-				demod_data_out.push_back((uint8_t)d_gatd_id[ii]);
-			for(int ii=0; ii < demod_data.size(); ii++)
-				demod_data_out.push_back(demod_data[ii]);
-
-			//Push message out with packet data
-			pmt::pmt_t value = pmt::init_u8vector(demod_data_out.size(), (const uint8_t*)&demod_data_out[0]);
-			pmt::pmt_t new_message = pmt::cons(pmt::PMT_NIL, value);
-			message_port_pub(pmt::mp("frame_out"), new_message);
-			float prf_length = roundf(mean(prf_vec)/sample_period);
-			time_t current_time = time(0);
-                        double seconds = difftime(current_time, last_time);
-                        last_time = current_time;
-			char* dt = std::ctime(&current_time);
-			std::cout << "SENDING MESSAGE" << std::endl;
-			std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
-			d_log_file << "SENDING MESSAGE" << std::endl;
-		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
-			for(int ii=0; ii < demod_data.size(); ii++){
-				std::cout << (int)(demod_data[ii]) << ", ";
-				d_log_file << (int)(demod_data[ii]) << ", ";
-			}
-			d_log_file << std::endl;
-			std::cout << std::endl;
-
-			sync = 0;                        // start over looking for sync
-			prf_vec.clear();
-			pulse_vec.clear();
-			demod_data.clear();
-			prf_count = 0;
-			pulse_count = 0;
-			n = 0;
-			sync_prf = 0;
-			sync_prf2 = 0;
-			sync_pulse = 0;
-			valid_pulse = 0;
-			valid_count = 0;
-			//std::cout << "found all bits, clear valid_counter: " << valid_count << std::endl;
 		}
 	
 		//Increment the data index pointer
 		nn++;
 	}
-
 	// Tell runtime system how many output items we produced.
 	return noutput_items;
 }
 
 } /* namespace nearfield */
 } /* namespace gr */
+
+
+
+
+
 

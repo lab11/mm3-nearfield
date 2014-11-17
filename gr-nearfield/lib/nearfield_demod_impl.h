@@ -66,10 +66,11 @@ namespace gr {
 	float max_sample;
 
 	std::queue<float> lastpulses;
-        int unit_time;
-        float time_offset;
-        float window_size;
+    int unit_time;
+    float time_offset;
+    float window_size;
 	std::deque<float> matched_pulses[40];
+	std::deque<float> matched_data[40];
 	std::deque<float> lastsamples;
 	float energy;
 	float all_pulse_energy[40];
@@ -81,13 +82,15 @@ namespace gr {
 	std::ofstream d_log_file;
 	std::string d_gatd_id;
 	time_t last_time;
-        float long_matched_out[40];
+    float long_matched_out[40];
+    float aggregated_header[40];
 	int sub_sample_counter;
-        int distance_table[16];
+    int distance_table[16];
 	int window_length[40];
-        int sum_table[16];
+    int sum_table[16];
 	int jitter;
 	int start;
+	float noise_power;
 	float max_current;
 	float avg_current;
 	
