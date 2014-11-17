@@ -53,7 +53,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.5;            // threshold set after observing data
+	threshold = 50000;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -310,6 +310,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		    max_current = 0;
     		avg_current = 0;
             if(sync == 0) {
+		//std::cout << "finding header" << std::endl;
 		    	float last[40];
 		    	for(int i = 0; i < 40; i++){
 			    	last[i] = 0;
@@ -381,7 +382,7 @@ int nearfield_demod_impl::work(int noutput_items,
                 if(start == 1) {
 		    		std::cout << std::endl;
                 }
-                if(max_header_response > threshold) { 
+                if(start == 1 && max_header_response > threshold) { 
                     sync = 1;
                     pos = 0;
                 }
@@ -389,6 +390,7 @@ int nearfield_demod_impl::work(int noutput_items,
     
             //header identified, find the data
             if(sync == 1) {
+		std::cout << "finding data" << std::endl;
 	            if(pos <= (((1+0.0025*time_offset) * unit_time * 16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * (N-1)))){
 	            	for(int i = 0; i < N; i++){
 	            		if(pos >= (((1+0.0025*time_offset) * unit_time * 16) * 0.95 + ((1+0.0025*time_offset) * unit_time * 16 * i))&&
@@ -415,6 +417,7 @@ int nearfield_demod_impl::work(int noutput_items,
             //got all data
 			if(n == N){                            // we've looked for all the data
 				//Prepare outgoing packet for GATD
+				std::cout << "got all data" << std::endl;
 				std::vector<uint8_t> demod_data_out;
 				for(int ii=0; ii < d_gatd_id.size(); ii++)
 					demod_data_out.push_back((uint8_t)d_gatd_id[ii]);
