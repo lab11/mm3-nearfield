@@ -88,11 +88,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	n = 0;              // counter for N
 	max_sample = 0;
 
-        unit_time = 50000/(16 * 5);
+        unit_time = 212500/(16 * 5);
         time_offset = 0.0025;
 	jitter = 4;
 	sub_sample_counter = 0;	
-
+	max_current = 0;
+	avg_current = 0;
 	last_time = time(0);
 	pulse_vec.clear();
 	prf_vec.clear();
@@ -284,19 +285,20 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 		
 
-		float max_current = 0;
-		float average_current = 0;
 		sub_sample_counter++;
 		if(in[nn] > max_current){
 			max_current = in[nn];
-			average_current += in[nn];
+			avg_current += in[nn];
 		}
-		current = max_current;
-		current = average_current;
+
+		//current = average_current;
                 //insert into the deque
 		//std::cout << "pushing: " << current << ", poping: " << matched_pulses[0].back() << std::endl;
 		if(sub_sample_counter == 5){
 			sub_sample_counter = 0;
+			current = max_current;
+			max_current = 0;
+			avg_current = 0;
 		float last[40];
 		for(int i = 0; i < 40; i++){
 			last[i] = 0;

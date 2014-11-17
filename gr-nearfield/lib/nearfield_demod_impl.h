@@ -88,6 +88,8 @@ namespace gr {
         int sum_table[16];
 	int jitter;
 	int start;
+	float max_current;
+	float avg_current;
 	
 
      public:
