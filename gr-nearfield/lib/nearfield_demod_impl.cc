@@ -87,9 +87,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
 	max_sample = 0;
-
-    unit_time = 212500/(16 * 5);
-    time_offset = 0.0025;
+	
+	threshold_sync = 0.5;
+	max_header_response = 0;
+    	unit_time = 212500/(16 * 5);
+    	time_offset = 0;
+	pos = 0;
 	jitter = 4;
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -125,6 +128,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 		long_matched_out[i] = 0;     
         aggregated_header[i] = 0;
 	}
+        for(int i = 0; i < 100; i++){
+		data_energy[i] = 0;     
+	}
+
 
 
         //init tables
@@ -374,7 +381,7 @@ int nearfield_demod_impl::work(int noutput_items,
                 if(start == 1) {
 		    		std::cout << std::endl;
                 }
-                if(max_header_response[i] > threshold) { 
+                if(max_header_response > threshold) { 
                     sync = 1;
                     pos = 0;
                 }
@@ -423,6 +430,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            double seconds = difftime(current_time, last_time);
 	            last_time = current_time;
 				char* dt = std::ctime(&current_time);
+				/*
 				std::cout << "SENDING MESSAGE" << std::endl;
 				std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
 				d_log_file << "SENDING MESSAGE" << std::endl;
@@ -433,7 +441,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				}
 				d_log_file << std::endl;
 				std::cout << std::endl;
-
+				*/
 				sync = 0;                        // start over looking for sync
 				prf_vec.clear();
 				pulse_vec.clear();
