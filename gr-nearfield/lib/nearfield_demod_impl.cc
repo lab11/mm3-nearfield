@@ -381,7 +381,7 @@ int nearfield_demod_impl::work(int noutput_items,
                 if(start == 1) {
 		    		std::cout << std::endl;
                 }
-                if(max_header_response > threshold) { 
+                if(max_header_response > 1000000 * threshold) { 
                     sync = 1;
                     pos = 0;
                 }
@@ -454,6 +454,9 @@ int nearfield_demod_impl::work(int noutput_items,
 				sync_pulse = 0;
 				valid_pulse = 0;
 				valid_count = 0;
+				for(int i = 0; i < N; i++){
+	            	data_energy[i] = 0; 
+	          	}
 				//std::cout << "found all bits, clear valid_counter: " << valid_count << std::endl;
 			}
 		}
