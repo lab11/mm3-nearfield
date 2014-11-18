@@ -64,14 +64,15 @@ namespace gr {
 	float last_prf;
 	float last_pulse;
 	float max_sample;
-
+    
+    double sample_counter;
 	std::queue<float> lastpulses;
 	float threshold_sync;
     int unit_time;
     int time_offset;
     float window_size;
 	std::deque<float> matched_pulses[40];
-	std::deque<float> matched_data[40];
+	std::deque<float> data_queue[100];
 	std::deque<float> lastsamples;
 	float energy;
 	float all_pulse_energy[40];
@@ -90,9 +91,11 @@ namespace gr {
 	int window_length[40];
     int sum_table[16];
 	float max_header_response;
+    float last_max_response;
 	int pos;	
 	int jitter;
 	int start;
+    int subsample_rate;
 	float noise_power;
 	float max_current;
 	float avg_current;
