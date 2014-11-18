@@ -95,7 +95,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     	unit_time = 50000/(16 * subsample_rate);
     	time_offset = 0;
 	pos = 0;
-	jitter = 4;
+	jitter = 1;
 	sub_sample_counter = 0;	
 	max_current = 0;
 	avg_current = 0;
