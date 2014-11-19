@@ -92,7 +92,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	
 	threshold_sync = 0.5;
 	max_header_response = 0;
-    	unit_time = 50000/(16 * subsample_rate);
+    	unit_time = 55000/(16 * subsample_rate);
     	time_offset = 0;
 	pos = 0;
 	jitter = 1;
@@ -425,7 +425,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            			data_energy[i] = current * current + data_energy[i]; 
                             //data_queue[i].pop_front();
                             //data_queue[i].push_back(current);
-                            std::cout << current << std::endl;
+                            //std::cout << current << std::endl;
 	            		}
 	            	}
 	            	pos++;
