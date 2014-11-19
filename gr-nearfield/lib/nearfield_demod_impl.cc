@@ -53,7 +53,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.2;            // threshold set after observing data
+	threshold = 1.5;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -95,7 +95,9 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     	unit_time = 55000/(16 * subsample_rate);
     	time_offset = 0;
 	pos = 0;
-	jitter = 5;
+    jitter = int(unit_time * 16 * 0.03);
+    //std::cout << jitter << std::endl;
+	//jitter = 1;
 	sub_sample_counter = 0;	
 	max_current = 0;
 	avg_current = 0;
@@ -158,6 +160,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         distance_table[14] = 26;
         distance_table[15] = 19;
        
+        last_offset = 0;
 	start = 0;
     last_max_response = 0;
         sum_table[0] = 0;
@@ -263,17 +266,17 @@ int nearfield_demod_impl::work(int noutput_items,
 
 
         //do matched filter first
-		float past = lastpulses.front();
-		lastpulses.pop();
-		energy = energy + in[nn] * in[nn] - past * past;
-		lastpulses.push(in[nn]);
+		//float past = lastpulses.front();
+		//lastpulses.pop();
+		//energy = energy + in[nn] * in[nn] - past * past;
+		//lastpulses.push(in[nn]);
 		/*
 		for(int m=0; m < 7; m++){
 			lastsamples[m] = lastsamples[m+1];
 		}
 		*/
-		lastsamples.pop_front();
-		lastsamples.push_back(in[nn]);
+		//lastsamples.pop_front();
+		//lastsamples.push_back(in[nn]);
 		/*
 		for (std::deque<float>::iterator it = lastsamples.begin(); it!=lastsamples.end(); ++it)
     				std::cout << ' ' << *it;
@@ -281,7 +284,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		//std::cout << "in: " << in[nn-filt_count] << std::endl;	
 		//float energy_template = 4.5211;
 		//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
-		float energy_template = 5.1611885;
+		//float energy_template = 5.1611885;
 		//current = (in[nn] * 0.5914 + in[nn-1] * 1.1921 + in[nn-2] * 1.2286 + 
 		//in[nn-3] * 0.8965 + in[nn-4] * 0.5363 + in[nn-5] * 0.324 + 
 		//in[nn-6] * 0.1764 + in[nn-7] * 0.1156)/sqrt(energy*4.5211);
@@ -363,7 +366,7 @@ int nearfield_demod_impl::work(int noutput_items,
                 }                
             }
 		    //std::cout << std::endl;
-		
+		    
     		if(matched_pulses[39].front() != 0 && start == 0) {
     			//std::cout << "filling buffers done" << std::endl;
 		    	start = 1;
@@ -375,31 +378,44 @@ int nearfield_demod_impl::work(int noutput_items,
 			noise_power = (all_pulse_energy[39] - long_matched_out[39])/(matched_pulses[39].size() - window_length[39]);
             max_header_response = 0;
 
-            if(sync == 0) {
-                for(int i = 0; i < 40; i++){
-		    		/*
-                    aggregated_header[i] = (long_matched_out[i] - 
-    						(all_pulse_energy[i] * window_length[i])/matched_pulses[i].size())/
-	    					(all_pulse_energy[i] - long_matched_out[i]);
-	    			*/
-                    aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i])/(noise_power * window_length[i]);	
 
-                    if(aggregated_header[i] > max_header_response){
-			            max_header_response = aggregated_header[i];
-			            time_offset = i;
-                    }
-	    		    if(start == 1){
-		    			//std::cout << aggregated_header[i] << ";";
-			    	}
-    			}
-                if(start == 1) {
-		    		//std::cout << std::endl;
-		    		//std::cout << max_header_response << std::endl;
+            for(int i = 0; i < 40; i++){
+				/*
+                aggregated_header[i] = (long_matched_out[i] - 
+						(all_pulse_energy[i] * window_length[i])/matched_pulses[i].size())/
+	    				(all_pulse_energy[i] - long_matched_out[i]);
+	    		*/
+                aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i])/(noise_power * window_length[i]);	
+
+                if(aggregated_header[i] > max_header_response){
+			        max_header_response = aggregated_header[i];
+		            time_offset = i;
                 }
+                /*
+	    		if(start == 1 && i < 7){
+		    		//std::cout << aggregated_header[i] << ";";
+		        }
+                */
+    		}
+            if(start == 1) {
+				//std::cout << std::endl;
+	    		//std::cout << max_header_response << std::endl;
+
+            }
+            /*
+            if(max_header_response > threshold) {
+	            std::cout << max_header_response << ", " << sample_counter << ", " << start << std::endl;
+            }
+            */
+
+
+            if(sync == 0) {
                 if(start == 1 && max_header_response > threshold) {
                     if(max_header_response > last_max_response) {
                         last_max_response = max_header_response;
+                        last_offset = time_offset;
                     } else {
+                        time_offset = last_offset;
                         std::cout << "find header, clock offset = " << time_offset << std::endl;
                         std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
@@ -418,10 +434,10 @@ int nearfield_demod_impl::work(int noutput_items,
             if(sync == 1) {
                 //std::cout << current << std::endl;
 		        //std::cout << "finding data" << std::endl;
-	            if(pos <= (((1+0.0025*time_offset) * unit_time * 16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * (N-1)))){
+	            if(pos <= ( ((1+0.0025*time_offset) * unit_time * 16 * (N)) + ((0.0025*time_offset+0.03)*unit_time*16*16) )){
 	            	for(int i = 0; i < N; i++){
-	            		if(pos >= (((1+0.0025*time_offset)* unit_time*16*16) * 0.95 + ((1+0.0025*time_offset) * unit_time * 16 * i))&&
-	            		 	pos <= (((1+0.0025*time_offset)* unit_time*16*16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * i))){
+	            		if(pos >= (((1+0.0025*time_offset)*unit_time*16*(i+1))-((0.0025*time_offset+0.03)*unit_time*16*16))&&
+	            		pos <= (((1+0.0025*time_offset)*unit_time*16*(i+1))+((0.0025*time_offset+0.03)*unit_time*16*16))){
 	            			data_energy[i] = current * current + data_energy[i]; 
                             //data_queue[i].pop_front();
                             //data_queue[i].push_back(current);
@@ -433,8 +449,8 @@ int nearfield_demod_impl::work(int noutput_items,
 	            else {
                     //std::cout << "looking at data" << std::endl;
 	            	for(int i = 0; i < N; i++) {
-                        float sig_power = (data_energy[i] - (noise_power * (1+0.0025*time_offset) * unit_time * 16 * 0.1))/
-	            			                (noise_power * (1+0.0025*time_offset) * unit_time * 16 * 0.1);
+                        float sig_power = (data_energy[i] - (noise_power * ((0.0025*time_offset+0.03)*unit_time*16*16*2)))/
+	            			                (noise_power * ((0.0025*time_offset+0.03)*unit_time*16*16*2));
                         //std::cout << (data_energy[i] - (noise_power * (1+0.0025*time_offset) * unit_time * 16 * 0.1))/
 	            		//	(noise_power * (1+0.0025*time_offset) * unit_time * 16 * 0.1) << std::endl;
 	            		if(sig_power > threshold_sync){
@@ -495,6 +511,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				valid_pulse = 0;
 				valid_count = 0;
                 last_max_response = 0;
+                last_offset = 0;
 				for(int i = 0; i < N; i++){
 	            	data_energy[i] = 0; 
 	          	}

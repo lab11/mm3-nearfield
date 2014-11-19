@@ -64,8 +64,8 @@ namespace gr {
 	float last_prf;
 	float last_pulse;
 	float max_sample;
-    
-    double sample_counter;
+    int last_offset;    
+    long int sample_counter;
 	std::queue<float> lastpulses;
 	float threshold_sync;
     int unit_time;
