@@ -53,7 +53,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.3;            // threshold set after observing data
+	threshold = 0.25;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -138,7 +138,6 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         }
         */
 	}
-
 
 
         //init tables
@@ -260,7 +259,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		float rx_data;
 		float transition;
 
-        //sample_counter++;
+        sample_counter++;
 
 
         //do matched filter first
@@ -402,7 +401,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_max_response = max_header_response;
                     } else {
                         std::cout << "find header, clock offset = " << time_offset << std::endl;
-                        //std::cout << "sample_counter = " << sample_counter << std::endl;
+                        std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
                         pos = 0;
                         //std::cout << "2.5" << std::endl;
@@ -421,12 +420,12 @@ int nearfield_demod_impl::work(int noutput_items,
 		        //std::cout << "finding data" << std::endl;
 	            if(pos <= (((1+0.0025*time_offset) * unit_time * 16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * (N-1)))){
 	            	for(int i = 0; i < N; i++){
-	            		if(pos >= (((1+0.0025*time_offset) * unit_time * 16) * 0.95 + ((1+0.0025*time_offset) * unit_time * 16 * i))&&
-	            		 	pos <= (((1+0.0025*time_offset) * unit_time * 16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * i))){
+	            		if(pos >= (((1+0.0025*time_offset)* unit_time*16*16) * 0.95 + ((1+0.0025*time_offset) * unit_time * 16 * i))&&
+	            		 	pos <= (((1+0.0025*time_offset)* unit_time*16*16) * 1.05 + ((1+0.0025*time_offset) * unit_time * 16 * i))){
 	            			data_energy[i] = current * current + data_energy[i]; 
                             //data_queue[i].pop_front();
                             //data_queue[i].push_back(current);
-                            //std::cout << current << std::endl;
+                            std::cout << current << std::endl;
 	            		}
 	            	}
 	            	pos++;

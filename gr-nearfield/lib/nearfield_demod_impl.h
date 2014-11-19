@@ -99,7 +99,10 @@ namespace gr {
 	float noise_power;
 	float max_current;
 	float avg_current;
-	float data_energy[100];	
+	float data_energy[100];
+    int num_rake_filter;
+    float unit_offset;
+    float max_offset;
 
      public:
       nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
