@@ -53,7 +53,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.25;            // threshold set after observing data
+	threshold = 0.2;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -95,7 +95,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     	unit_time = 55000/(16 * subsample_rate);
     	time_offset = 0;
 	pos = 0;
-	jitter = 1;
+	jitter = 5;
 	sub_sample_counter = 0;	
 	max_current = 0;
 	avg_current = 0;
