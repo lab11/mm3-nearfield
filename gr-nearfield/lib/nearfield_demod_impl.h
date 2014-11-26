@@ -68,10 +68,10 @@ namespace gr {
     long int sample_counter;
 	std::queue<float> lastpulses;
 	float threshold_sync;
-    int unit_time;
+    float unit_time;
     int time_offset;
     float window_size;
-	std::deque<float> matched_pulses[40];
+	std::deque<float> matched_pulses;
 	std::deque<float> data_queue[100];
 	std::deque<float> lastsamples;
 	float energy;
@@ -100,9 +100,11 @@ namespace gr {
 	float max_current;
 	float avg_current;
 	float data_energy[100];
+	float data_energy_out;
     int num_rake_filter;
     float unit_offset;
     float max_offset;
+    int rake_offset[40];
 
      public:
       nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
