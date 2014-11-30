@@ -95,6 +95,7 @@ namespace gr {
 	int pos;	
 	int jitter;
 	int start;
+	float last[40];
     int subsample_rate;
 	float noise_power;
 	float max_current;

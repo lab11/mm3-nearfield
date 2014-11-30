@@ -138,6 +138,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         for(int i = 0; i < num_rake_filter; i++){
 		long_matched_out[i] = 0;     
         aggregated_header[i] = 0;
+        last[i] = 0;
 	}
         for(int i = 0; i < 100; i++){
 		data_energy[i] = 0; 
@@ -370,11 +371,6 @@ int nearfield_demod_impl::work(int noutput_items,
     		avg_current = 0;
 
 		    //std::cout << "finding header" << std::endl;
-		    float last[num_rake_filter];
-			for(int i = 0; i < num_rake_filter; i++){
-		    	last[i] = 0;
-		    }
-
             for(int i = 0; i< num_rake_filter; i++){
 	    		last[i] = matched_pulses[rake_offset[i]];
 		    	all_pulse_energy[i] = all_pulse_energy[i] + current * current - last[i] * last[i];
