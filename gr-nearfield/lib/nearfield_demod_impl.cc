@@ -199,42 +199,39 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 }
 
 void* nearfield_demod_impl::rake_filter_process(void *start_num, void *end_num) {
-    int *start_counter;
-    int *end_counter;
-    start_counter = (int *)start_num;
-    end_counter = (int *)end_num;
-        for(int k = 0; k < 16; k++) {
-            std::cout << *start_counter << ", " << *end_counter << std::endl;
-            for(int i = *start_counter; i < *end_counter; i++){
-            //for(int j = 0; j < matched_pulses[i].size(); j++){
-		        if(k == 0) {
-			    	/*
-				    if(i == 0) {
-				    //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
-    				std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
-	    				<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
-						matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
-					}
-			    	*/
-				    long_matched_out[i] = long_matched_out[i] - 
-				    			last[i] * last[i] + 
-					    		matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
-			    }
-    			else if(k > 0 && k <= 15) {
-				
-	    		//std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
-                ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
-			    	long_matched_out[i] = long_matched_out[i] - 
-							matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
-					    	matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
-							(matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-						    unit_offset * unit_time * sum_table[k])]) * 
-						    (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-						    unit_offset * unit_time * sum_table[k])]);
-				}
-            }                
-        }
-    return;
+    int *start_counter = (int *)start_num;
+    int *end_counter = (int *)end_num;
+    for(int k = 0; k < 16; k++) {
+        std::cout << *start_counter << ", " << *end_counter << std::endl;
+        for(int i = *start_counter; i < *end_counter; i++){
+        //for(int j = 0; j < matched_pulses[i].size(); j++){
+            if(k == 0) {
+                /*
+                if(i == 0) {
+                //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
+                std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
+                    << ", delete: [" << 2 * jitter + 1 << "]: " <<  
+                    matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+                }
+                */
+                long_matched_out[i] = long_matched_out[i] - 
+                            last[i] * last[i] + 
+                            matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
+            }
+            else if(k > 0 && k <= 15) {
+        
+            //std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
+            ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
+                long_matched_out[i] = long_matched_out[i] - 
+                        matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
+                        matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
+                        (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                        unit_offset * unit_time * sum_table[k])]) * 
+                        (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                        unit_offset * unit_time * sum_table[k])]);
+            }
+        }                
+    }
 }
 
 float nearfield_demod_impl::getLastObservedBitrate(){
@@ -382,20 +379,20 @@ int nearfield_demod_impl::work(int noutput_items,
             pthread_t thread_1, thread_2, thread_3, thread_4;
             int iret_1,iret_2,iret_3,iret_4;
 
-            int *start_1 = 0;
-            int *start_2 = 10;
-            int *start_3 = 20;
-            int *start_4 = 30;
-            int *end_1 = 0;
-            int *end_2 = 10;
-            int *end_3 = 20;
-            int *end_4 = 30;
+            int start_1 = 0;
+            int start_2 = 10;
+            int start_3 = 20;
+            int start_4 = 30;
+            int end_1 = 0;
+            int end_2 = 10;
+            int end_3 = 20;
+            int end_4 = 30;
 
 
-            iret_1 = pthread_create(&thread_1, NULL, rake_filter_process, (void*)start_1, (void*)end_1);
-            iret_2 = pthread_create(&thread_2, NULL, rake_filter_process, (void*)start_2, (void*)end_2);
-            iret_3 = pthread_create(&thread_3, NULL, rake_filter_process, (void*)start_3, (void*)end_3);
-            iret_4 = pthread_create(&thread_4, NULL, rake_filter_process, (void*)start_4, (void*)end_4);
+            iret_1 = pthread_create(&thread_1, NULL, rake_filter_process, &start_1, &end_1);
+            iret_2 = pthread_create(&thread_2, NULL, rake_filter_process, &start_2, &end_2);
+            iret_3 = pthread_create(&thread_3, NULL, rake_filter_process, &start_3, &end_3);
+            iret_4 = pthread_create(&thread_4, NULL, rake_filter_process, &start_4, &end_4);
 
             pthread_join(thread_1, NULL);
             pthread_join(thread_2, NULL);
