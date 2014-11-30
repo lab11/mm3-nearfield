@@ -197,7 +197,7 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
 }
 
-void nearfield_demod_impl::*rake_filter_process(void *start_num, void *end_num) {
+void* nearfield_demod_impl::rake_filter_process(void *start_num, void *end_num) {
     int *start_counter;
     int *end_counter;
     start_counter = (int *)start_num;
