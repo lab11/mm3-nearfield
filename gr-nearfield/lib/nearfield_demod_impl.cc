@@ -29,6 +29,7 @@
 #include <queue>
 #include <ctime>
 #include <iostream>
+#include <pthread.h>
 namespace gr {
 namespace nearfield {
 
@@ -196,6 +197,40 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
 }
 
+void *rake_filter_process(int start_num. int end_num) {
+        for(int k = 0; k < 16; k++) {
+            for(int i = start_num; i < end_num; i++){
+            //for(int j = 0; j < matched_pulses[i].size(); j++){
+		        if(k == 0) {
+			    	/*
+				    if(i == 0) {
+				    //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
+    				std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
+	    				<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
+						matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+					}
+			    	*/
+				    long_matched_out[i] = long_matched_out[i] - 
+				    			last[i] * last[i] + 
+					    		matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
+			    }
+    			else if(k > 0 && k <= 15) {
+				
+	    		//std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
+                ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
+			    	long_matched_out[i] = long_matched_out[i] - 
+							matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
+					    	matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
+							(matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+						    unit_offset * unit_time * sum_table[k])]) * 
+						    (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+						    unit_offset * unit_time * sum_table[k])]);
+				}
+            }                
+        }
+    return;
+}
+
 float nearfield_demod_impl::getLastObservedBitrate(){
 	return 1.0/last_prf;
 }
@@ -342,19 +377,30 @@ int nearfield_demod_impl::work(int noutput_items,
     		}
 		    matched_pulses.pop_front();
 	        matched_pulses.push_back(current);
+            
+            pthread_t thread_1, thread_2, thread_3, thread_4;
+            int iret_1,iret_2,iret_3,iret_4;
 
+            iret_1 = pthread_create(&thread_1, NULL, rake_filter_process, (int)0, (int)10);
+            iret_2 = pthread_create(&thread_2, NULL, rake_filter_process, (int)10, (int)20);
+            iret_3 = pthread_create(&thread_3, NULL, rake_filter_process, (int)20, (int)30);
+            iret_4 = pthread_create(&thread_4, NULL, rake_filter_process, (int)30, (int)40);
+
+            pthread_join(thread_1, NULL);
+            pthread_join(thread_2, NULL);
+            pthread_join(thread_3, NULL);
+            pthread_join(thread_4, NULL);
+            /*
             for(int k = 0; k < 16; k++) {
                 for(int i = 0; i < num_rake_filter; i++){
                 //for(int j = 0; j < matched_pulses[i].size(); j++){
 		        	if(k == 0) {
-				    	/*
-					    if(i == 0) {
+					    //if(i == 0) {
 					    //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
     					std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
-	    					<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
-							matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
-		    			}
-			    		*/
+	    				//	<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
+						//	matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+		    			//}
 					    long_matched_out[i] = long_matched_out[i] - 
 					    			last[i] * last[i] + 
 						    		matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
@@ -373,6 +419,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				    }
                 }                
             }
+            */
 		    //std::cout << std::endl;
 		    
     		if(matched_pulses.front() != 0 && start == 0) {
