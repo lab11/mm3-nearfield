@@ -232,6 +232,7 @@ void* nearfield_demod_impl::rake_filter_process(void *start_num) {
             }
         }                
     }
+    return NULL;
 }
 
 float nearfield_demod_impl::getLastObservedBitrate(){
