@@ -197,14 +197,14 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
 }
 
-void *rake_filter_process(void *start_num, void *end_num) {
+void nearfield_demod_impl::*rake_filter_process(void *start_num, void *end_num) {
     int *start_counter;
     int *end_counter;
     start_counter = (int *)start_num;
     end_counter = (int *)end_num;
         for(int k = 0; k < 16; k++) {
-            std::cout << start_counter << ", " << end_counter << std::endl;
-            for(int i = start_counter; i < end_counter; i++){
+            std::cout << *start_counter << ", " << *end_counter << std::endl;
+            for(int i = *start_counter; i < *end_counter; i++){
             //for(int j = 0; j < matched_pulses[i].size(); j++){
 		        if(k == 0) {
 			    	/*
