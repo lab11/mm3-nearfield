@@ -197,9 +197,14 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
 }
 
-void *rake_filter_process(int start_num. int end_num) {
+void *rake_filter_process(void *start_num, void *end_num) {
+    int *start_counter;
+    int *end_counter;
+    start_counter = (int *)start_num;
+    end_counter = (int *)end_num;
         for(int k = 0; k < 16; k++) {
-            for(int i = start_num; i < end_num; i++){
+            std::cout << start_counter << ", " << end_counter << std::endl;
+            for(int i = start_counter; i < end_counter; i++){
             //for(int j = 0; j < matched_pulses[i].size(); j++){
 		        if(k == 0) {
 			    	/*
@@ -381,10 +386,20 @@ int nearfield_demod_impl::work(int noutput_items,
             pthread_t thread_1, thread_2, thread_3, thread_4;
             int iret_1,iret_2,iret_3,iret_4;
 
-            iret_1 = pthread_create(&thread_1, NULL, rake_filter_process, (int)0, (int)10);
-            iret_2 = pthread_create(&thread_2, NULL, rake_filter_process, (int)10, (int)20);
-            iret_3 = pthread_create(&thread_3, NULL, rake_filter_process, (int)20, (int)30);
-            iret_4 = pthread_create(&thread_4, NULL, rake_filter_process, (int)30, (int)40);
+            int *start_1 = 0;
+            int *start_2 = 10;
+            int *start_3 = 20;
+            int *start_4 = 30;
+            int *end_1 = 0;
+            int *end_2 = 10;
+            int *end_3 = 20;
+            int *end_4 = 30;
+
+
+            iret_1 = pthread_create(&thread_1, NULL, rake_filter_process, (void*)start_1, (void*)end_1);
+            iret_2 = pthread_create(&thread_2, NULL, rake_filter_process, (void*)start_2, (void*)end_2);
+            iret_3 = pthread_create(&thread_3, NULL, rake_filter_process, (void*)start_3, (void*)end_3);
+            iret_4 = pthread_create(&thread_4, NULL, rake_filter_process, (void*)start_4, (void*)end_4);
 
             pthread_join(thread_1, NULL);
             pthread_join(thread_2, NULL);
