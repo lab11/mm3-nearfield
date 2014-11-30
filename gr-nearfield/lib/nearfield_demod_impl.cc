@@ -198,7 +198,7 @@ nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
 }
 
-void* nearfield_demod_impl::rake_filter_process(void *start_num) {
+static void* nearfield_demod_impl::rake_filter_process(void *start_num) {
     int *start_counter = (int *)start_num;
     //int *end_counter = (int *)end_num;
     for(int k = 0; k < 16; k++) {
@@ -386,10 +386,10 @@ int nearfield_demod_impl::work(int noutput_items,
             int start_4 = 30;
 
 
-            iret_1 = pthread_create(&thread_1, NULL, rake_filter_process, &start_1);
-            iret_2 = pthread_create(&thread_2, NULL, rake_filter_process, &start_2);
-            iret_3 = pthread_create(&thread_3, NULL, rake_filter_process, &start_3);
-            iret_4 = pthread_create(&thread_4, NULL, rake_filter_process, &start_4);
+            iret_1 = pthread_create(&thread_1, NULL, &(nearfield_demod_impl::rake_filter_process), &start_1);
+            iret_2 = pthread_create(&thread_2, NULL, &(nearfield_demod_impl::rake_filter_process), &start_2);
+            iret_3 = pthread_create(&thread_3, NULL, &(nearfield_demod_impl::rake_filter_process), &start_3);
+            iret_4 = pthread_create(&thread_4, NULL, &(nearfield_demod_impl::rake_filter_process), &start_4);
 
             pthread_join(thread_1, NULL);
             pthread_join(thread_2, NULL);
