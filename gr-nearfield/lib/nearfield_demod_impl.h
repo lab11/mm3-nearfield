@@ -127,7 +127,7 @@ namespace gr {
       void setSampleRate(float sample_rate_in);
       void setPacketLen(int packet_len_in);
       void setHeaderLen(int header_len_in);
-      void *rake_filter_process(int start_num, int end_num);
+      void* rake_filter_process(void* start_num, void* end_num);
     };
 
   } // namespace nearfield
