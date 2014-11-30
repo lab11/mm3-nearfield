@@ -33,6 +33,7 @@
 namespace gr {
 namespace nearfield {
 
+extern std::deque<float> matched_pulses;
 float mean(std::vector<float> in_vec){
 	float sum = std::accumulate(in_vec.begin(), in_vec.end(), 0.0);
 	float m = sum / in_vec.size();

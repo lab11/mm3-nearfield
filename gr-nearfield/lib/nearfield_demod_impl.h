@@ -25,10 +25,11 @@
 #include <fstream>
 #include <queue>
 
-std::deque<float> matched_pulses;
+
 namespace gr {
   namespace nearfield {
 
+    std::deque<float> matched_pulses;
     class nearfield_demod_impl : public nearfield_demod
     {
      private:
