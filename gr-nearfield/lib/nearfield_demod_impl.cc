@@ -197,6 +197,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
 }
+
 static void* nearfield_demod_impl::rake_filter_process(void *start_num) {
     int *start_counter = (int *)start_num;
     //int *end_counter = (int *)end_num;

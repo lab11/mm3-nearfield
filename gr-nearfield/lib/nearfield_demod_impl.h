@@ -24,6 +24,8 @@
 #include <nearfield/nearfield_demod.h>
 #include <fstream>
 #include <queue>
+
+std::deque<float> matched_pulses;
 namespace gr {
   namespace nearfield {
 
@@ -71,7 +73,7 @@ namespace gr {
     float unit_time;
     int time_offset;
     float window_size;
-	std::deque<float> matched_pulses;
+	//std::deque<float> matched_pulses;
 	std::deque<float> data_queue[100];
 	std::deque<float> lastsamples;
 	float energy;
@@ -129,6 +131,7 @@ namespace gr {
       void setPacketLen(int packet_len_in);
       void setHeaderLen(int header_len_in);
       static void* rake_filter_process(void* start_num);
+      static void* rake_filter_process_helper(void * context);
     };
 
   } // namespace nearfield
