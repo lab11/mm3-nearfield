@@ -33,7 +33,11 @@
 namespace gr {
 namespace nearfield {
 
-extern std::deque<float> matched_pulses;
+void* rake_filter_process_helper(void *obj) {
+    object *mm3 = (object *)obj;
+    mm3 -> C -> rake_filter_process(mm3->start_num, mm3->end_num);
+    return NULL;
+}
 float mean(std::vector<float> in_vec){
 	float sum = std::accumulate(in_vec.begin(), in_vec.end(), 0.0);
 	float m = sum / in_vec.size();
@@ -191,20 +195,44 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
 	message_port_register_out(pmt::mp("frame_out"));
 }
-
 /*
- * Our virtual destructor.
- */
-nearfield_demod_impl::~nearfield_demod_impl() {
-	d_log_file.close();
-}
-
-static void* nearfield_demod_impl::rake_filter_process(void *start_num) {
+void nearfield_demod_impl::rake_filter_process(void *start_num) {
     int *start_counter = (int *)start_num;
     //int *end_counter = (int *)end_num;
     for(int k = 0; k < 16; k++) {
         std::cout << *start_counter << std::endl;
         for(int i = *start_counter; i < (*start_counter)+10; i++){
+        //for(int j = 0; j < matched_pulses[i].size(); j++){
+            if(k == 0) {
+               long_matched_out[i] = long_matched_out[i] - 
+                            last[i] * last[i] + 
+                            matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
+            }
+            else if(k > 0 && k <= 15) {
+        
+            //std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
+            ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
+                long_matched_out[i] = long_matched_out[i] - 
+                        matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
+                        matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
+                        (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                        unit_offset * unit_time * sum_table[k])]) * 
+                        (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                        unit_offset * unit_time * sum_table[k])]);
+            }
+        }                
+    }
+    return NULL;
+}
+*/
+
+
+void nearfield_demod_impl::rake_filter_process(int start_num, int end_num) {
+    int start_counter = start_num;
+    //int *end_counter = (int *)end_num;
+    for(int k = 0; k < 16; k++) {
+        //std::cout << start_counter << std::endl;
+        for(int i = start_counter; i < end_num; i++){
         //for(int j = 0; j < matched_pulses[i].size(); j++){
             if(k == 0) {
                 /*
@@ -233,9 +261,15 @@ static void* nearfield_demod_impl::rake_filter_process(void *start_num) {
             }
         }                
     }
-    return NULL;
 }
 
+
+/*
+ * Our virtual destructor.
+ */
+nearfield_demod_impl::~nearfield_demod_impl() {
+	d_log_file.close();
+}
 float nearfield_demod_impl::getLastObservedBitrate(){
 	return 1.0/last_prf;
 }
@@ -380,6 +414,19 @@ int nearfield_demod_impl::work(int noutput_items,
             
             pthread_t thread_1, thread_2, thread_3, thread_4;
             int iret_1,iret_2,iret_3,iret_4;
+            object Obj_1, Obj_2, Obj_3, Obj_4;
+            Obj_1.C = this;
+            Obj_1.start_num =0;
+            Obj_1.end_num =10;
+            Obj_2.C = this;
+            Obj_2.start_num =10;
+            Obj_2.end_num =20;
+            Obj_3.C = this;
+            Obj_3.start_num =20;
+            Obj_3.end_num =30;
+            Obj_4.C = this;
+            Obj_4.start_num =30;
+            Obj_4.end_num=40;
 
             int start_1 = 0;
             int start_2 = 10;
@@ -387,10 +434,10 @@ int nearfield_demod_impl::work(int noutput_items,
             int start_4 = 30;
 
 
-            iret_1 = pthread_create(&thread_1, NULL, &(nearfield_demod_impl::rake_filter_process), &start_1);
-            iret_2 = pthread_create(&thread_2, NULL, &(nearfield_demod_impl::rake_filter_process), &start_2);
-            iret_3 = pthread_create(&thread_3, NULL, &(nearfield_demod_impl::rake_filter_process), &start_3);
-            iret_4 = pthread_create(&thread_4, NULL, &(nearfield_demod_impl::rake_filter_process), &start_4);
+            iret_1 = pthread_create(&thread_1, NULL, &rake_filter_process_helper, &Obj_1);
+            iret_2 = pthread_create(&thread_2, NULL, &rake_filter_process_helper, &Obj_2);
+            iret_3 = pthread_create(&thread_3, NULL, &rake_filter_process_helper, &Obj_3);
+            iret_4 = pthread_create(&thread_4, NULL, &rake_filter_process_helper, &Obj_4);
 
             pthread_join(thread_1, NULL);
             pthread_join(thread_2, NULL);

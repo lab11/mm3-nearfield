@@ -29,7 +29,8 @@
 namespace gr {
   namespace nearfield {
 
-    std::deque<float> matched_pulses;
+
+
     class nearfield_demod_impl : public nearfield_demod
     {
      private:
@@ -106,6 +107,7 @@ namespace gr {
 	float data_energy[100];
 	float data_energy_out;
     int num_rake_filter;
+    std::deque<float> matched_pulses;
     float unit_offset;
     float max_offset;
     int rake_offset[40];
@@ -131,10 +133,18 @@ namespace gr {
       void setSampleRate(float sample_rate_in);
       void setPacketLen(int packet_len_in);
       void setHeaderLen(int header_len_in);
-      static void* rake_filter_process(void* start_num);
-      static void* rake_filter_process_helper(void * context);
+      void rake_filter_process(int start_num, int end_num);
+
+
     };
 
+    struct object {
+        nearfield_demod_impl* C;
+        int start_num;
+        int end_num;
+    };
+
+    void* rake_filter_process_helper(void * obj);
   } // namespace nearfield
 } // namespace gr
 
