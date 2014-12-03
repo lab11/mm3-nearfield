@@ -59,7 +59,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 3;            // threshold set after observing data
+	threshold = 4;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -94,14 +94,14 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
 	max_sample = 0;
-    subsample_rate = 100;
+    	subsample_rate = 500;
 	
 	threshold_sync = 0.7;
 	max_header_response = 0;
     unit_time = 55000/(16 * subsample_rate);
     time_offset = 0;
 	pos = 0;
-    jitter = int(unit_time * 16 * 0.03);
+    jitter = int(unit_time * 16 * 0.01);
     //std::cout << jitter << std::endl;
 	//jitter = 1;
     num_rake_filter = 40;
@@ -578,7 +578,7 @@ int nearfield_demod_impl::work(int noutput_items,
     		}
             if(start == 1) {
 				//std::cout << std::endl;
-	    		std::cout << max_header_response << ";" << sample_counter << std::endl;
+	    		//std::cout << max_header_response << ";" << sample_counter << std::endl;
 
             }
             
@@ -595,7 +595,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_offset = time_offset;
                     } else {
                         time_offset = last_offset;
-                        //std::cout << "find header, clock offset = " << time_offset << std::endl;
+                        std::cout << "find header, clock offset = " << time_offset << std::endl;
                         //std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
                         pos = 0;
