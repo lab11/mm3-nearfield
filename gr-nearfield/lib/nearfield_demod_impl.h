@@ -28,6 +28,13 @@
 
 namespace gr {
   namespace nearfield {
+    class nearfield_demod_impl;
+    struct object {
+        nearfield_demod_impl* C;
+        int start_num;
+        int end_num;
+        int thread_num;
+    };
 
 
 
@@ -112,6 +119,23 @@ namespace gr {
     float max_offset;
     int rake_offset[40];
 
+    pthread_t threads_0;
+    pthread_t threads_1;
+    pthread_t threads_2;
+    pthread_t threads_3;
+    pthread_mutex_t locks_0;
+    pthread_mutex_t locks_1;
+    pthread_mutex_t locks_2;
+    pthread_mutex_t locks_3;
+    pthread_mutex_t shared_lock;
+    pthread_cond_t shared_cond;
+    int count;
+    int irets[4];
+    object Objs_0;
+    object Objs_1;
+    object Objs_2;
+    object Objs_3;
+
      public:
       nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
       ~nearfield_demod_impl();
@@ -133,15 +157,9 @@ namespace gr {
       void setSampleRate(float sample_rate_in);
       void setPacketLen(int packet_len_in);
       void setHeaderLen(int header_len_in);
-      void rake_filter_process(int start_num, int end_num);
+      void rake_filter_process(int start_num, int end_num, int thread_num);
 
 
-    };
-
-    struct object {
-        nearfield_demod_impl* C;
-        int start_num;
-        int end_num;
     };
 
     void* rake_filter_process_helper(void * obj);

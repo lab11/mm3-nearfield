@@ -35,7 +35,7 @@ namespace nearfield {
 
 void* rake_filter_process_helper(void *obj) {
     object *mm3 = (object *)obj;
-    mm3 -> C -> rake_filter_process(mm3->start_num, mm3->end_num);
+    mm3 -> C -> rake_filter_process(mm3->start_num, mm3->end_num, mm3->thread_num);
     return NULL;
 }
 float mean(std::vector<float> in_vec){
@@ -59,7 +59,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.7;            // threshold set after observing data
+	threshold = 3;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -94,7 +94,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	valid_pulse = 0;    // flag for pulse detection
 	n = 0;              // counter for N
 	max_sample = 0;
-    subsample_rate = 5;
+    subsample_rate = 100;
 	
 	threshold_sync = 0.7;
 	max_header_response = 0;
@@ -193,6 +193,52 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 		}
 	}
 
+    Objs_0.C = this;
+    Objs_0.start_num =0;
+    Objs_0.end_num =10;
+    Objs_0.thread_num =0;
+    Objs_1.C = this;
+    Objs_1.start_num =10;
+    Objs_1.end_num =20;
+    Objs_1.thread_num =1;
+    Objs_2.C = this;
+    Objs_2.start_num =20;
+    Objs_2.end_num =30;
+    Objs_2.thread_num =2;
+    Objs_3.C = this;
+    Objs_3.start_num =30;
+    Objs_3.end_num=40;
+    Objs_3.thread_num =3;
+
+    count = 0;
+    //std::cerr << "start" << std::endl;
+    shared_lock = PTHREAD_MUTEX_INITIALIZER;
+    //pthread_mutex_lock(&shared_lock);
+    //std::cerr << "1" << std::endl;
+    shared_cond = PTHREAD_COND_INITIALIZER;
+    //std::cerr << "2" << std::endl;
+
+
+
+    locks_0 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_0);
+    locks_1 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_1);
+    locks_2 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_2);
+    locks_3 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_3);
+
+    //std::cerr << "3" << std::endl;
+    
+    irets[0] = pthread_create(&threads_0, NULL, &rake_filter_process_helper, &Objs_0);
+    irets[1] = pthread_create(&threads_1, NULL, &rake_filter_process_helper, &Objs_1);
+    irets[2] = pthread_create(&threads_2, NULL, &rake_filter_process_helper, &Objs_2);
+    irets[3] = pthread_create(&threads_3, NULL, &rake_filter_process_helper, &Objs_3);
+
+    //std::cerr << "4" << std::endl;
+
+
 	message_port_register_out(pmt::mp("frame_out"));
 }
 /*
@@ -227,39 +273,64 @@ void nearfield_demod_impl::rake_filter_process(void *start_num) {
 */
 
 
-void nearfield_demod_impl::rake_filter_process(int start_num, int end_num) {
+void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int thread_num) {
     int start_counter = start_num;
     //int *end_counter = (int *)end_num;
-    for(int k = 0; k < 16; k++) {
-        //std::cout << start_counter << std::endl;
-        for(int i = start_counter; i < end_num; i++){
-        //for(int j = 0; j < matched_pulses[i].size(); j++){
-            if(k == 0) {
-                /*
-                if(i == 0) {
-                //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
-                std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
-                    << ", delete: [" << 2 * jitter + 1 << "]: " <<  
-                    matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+    while(1){
+        //wait for mutex()
+
+        if(thread_num == 0){
+            pthread_mutex_lock(&locks_0);
+        }else if(thread_num == 1){
+            pthread_mutex_lock(&locks_1);
+        }else if(thread_num == 2){
+            pthread_mutex_lock(&locks_2);
+        }else{
+            pthread_mutex_lock(&locks_3);
+        }
+            
+
+        //std::cout << "start thread: " << thread_num << std::endl;
+        for(int k = 0; k < 16; k++) {
+            //std::cout << start_counter << std::endl;
+            for(int i = start_counter; i < end_num; i++){
+            //for(int j = 0; j < matched_pulses[i].size(); j++){
+                if(k == 0) {
+                    /*
+                    if(i == 0) {
+                    //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
+                    std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
+                        << ", delete: [" << 2 * jitter + 1 << "]: " <<  
+                        matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
+                    }
+                    */
+                    long_matched_out[i] = long_matched_out[i] - 
+                                last[i] * last[i] + 
+                                matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
                 }
-                */
-                long_matched_out[i] = long_matched_out[i] - 
-                            last[i] * last[i] + 
-                            matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
-            }
-            else if(k > 0 && k <= 15) {
-        
-            //std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
-            ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
-                long_matched_out[i] = long_matched_out[i] - 
-                        matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
-                        matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
-                        (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-                        unit_offset * unit_time * sum_table[k])]) * 
-                        (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-                        unit_offset * unit_time * sum_table[k])]);
-            }
-        }                
+                else if(k > 0 && k <= 15) {
+            
+                //std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
+                ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
+                    long_matched_out[i] = long_matched_out[i] - 
+                            matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
+                            matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
+                            (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                            unit_offset * unit_time * sum_table[k])]) * 
+                            (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                            unit_offset * unit_time * sum_table[k])]);
+                }
+            }                
+        }
+        //pthread_cond_signal(&conds[thread_num]);
+        //pthread_mutex_unlock(&locks[thread_num]);
+        //Lock mutex()
+        pthread_mutex_lock(&shared_lock);
+        count = count + 1;
+        if(count == 4){
+            pthread_cond_signal(&shared_cond);
+        }
+        pthread_mutex_unlock(&shared_lock);
     }
 }
 
@@ -269,6 +340,15 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num) {
  */
 nearfield_demod_impl::~nearfield_demod_impl() {
 	d_log_file.close();
+    pthread_mutex_destroy(&locks_0);
+    pthread_mutex_destroy(&locks_1);
+    pthread_mutex_destroy(&locks_2);
+    pthread_mutex_destroy(&locks_3);
+        //pthread_join(thread[i], NULL);
+
+    pthread_mutex_destroy(&shared_lock);
+    pthread_cond_destroy(&shared_cond);
+           
 }
 float nearfield_demod_impl::getLastObservedBitrate(){
 	return 1.0/last_prf;
@@ -341,7 +421,13 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Local non-persistent variables
 		float rx_data;
 		float transition;
-
+        if(sample_counter == 1 * 10000000){
+            //std::cerr << "10M reached" << std::endl;
+        }
+        if(sample_counter == 5 * 10000000){
+            //std::cerr << "50M reached" << std::endl;
+            //sample_counter = 0;
+        }
         sample_counter++;
 
 
@@ -391,7 +477,7 @@ int nearfield_demod_impl::work(int noutput_items,
 		sub_sample_counter++;
     	if(in[nn] > max_current){
 			max_current = in[nn];
-	    	avg_current += in[nn];
+	    	//avg_current += in[nn];
         }
 
 		    //current = average_current;
@@ -412,69 +498,54 @@ int nearfield_demod_impl::work(int noutput_items,
 		    matched_pulses.pop_front();
 	        matched_pulses.push_back(current);
             
-            pthread_t thread_1, thread_2, thread_3, thread_4;
-            int iret_1,iret_2,iret_3,iret_4;
-            object Obj_1, Obj_2, Obj_3, Obj_4;
-            Obj_1.C = this;
-            Obj_1.start_num =0;
-            Obj_1.end_num =10;
-            Obj_2.C = this;
-            Obj_2.start_num =10;
-            Obj_2.end_num =20;
-            Obj_3.C = this;
-            Obj_3.start_num =20;
-            Obj_3.end_num =30;
-            Obj_4.C = this;
-            Obj_4.start_num =30;
-            Obj_4.end_num=40;
-
-            int start_1 = 0;
-            int start_2 = 10;
-            int start_3 = 20;
-            int start_4 = 30;
-
-
-            iret_1 = pthread_create(&thread_1, NULL, &rake_filter_process_helper, &Obj_1);
-            iret_2 = pthread_create(&thread_2, NULL, &rake_filter_process_helper, &Obj_2);
-            iret_3 = pthread_create(&thread_3, NULL, &rake_filter_process_helper, &Obj_3);
-            iret_4 = pthread_create(&thread_4, NULL, &rake_filter_process_helper, &Obj_4);
-
-            pthread_join(thread_1, NULL);
-            pthread_join(thread_2, NULL);
-            pthread_join(thread_3, NULL);
-            pthread_join(thread_4, NULL);
-            /*
-            for(int k = 0; k < 16; k++) {
-                for(int i = 0; i < num_rake_filter; i++){
-                //for(int j = 0; j < matched_pulses[i].size(); j++){
-		        	if(k == 0) {
-					    //if(i == 0) {
-					    //std::cout << "k = " << k << ", insert: 0" << ", delete: " << 2 * jitter + 1 << std::endl;
-    					std::cout << "k = " << k << ", insert: [0]: " << matched_pulses[i][0] * matched_pulses[i][0] 
-	    				//	<< ", delete: [" << 2 * jitter + 1 << "]: " <<  
-						//	matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
-		    			//}
-					    long_matched_out[i] = long_matched_out[i] - 
-					    			last[i] * last[i] + 
-						    		matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
-				    }
-    			    else if(k > 0 && k <= 15) {
-					
-	    			//std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
-                    ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
-				    	long_matched_out[i] = long_matched_out[i] - 
-								matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
-					    		matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
-						    	(matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-							    unit_offset * unit_time * sum_table[k])]) * 
-							    (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-							    unit_offset * unit_time * sum_table[k])]);
-				    }
-                }                
+            
+            //std::cout << "enable 4 threads" << std::endl;
+            pthread_mutex_unlock(&locks_0);
+            pthread_mutex_unlock(&locks_1);
+            pthread_mutex_unlock(&locks_2);
+            pthread_mutex_unlock(&locks_3);
+            
+            
+            pthread_mutex_lock(&shared_lock);
+            while(count < 4){
+                pthread_cond_wait(&shared_cond, &shared_lock);
             }
-            */
-		    //std::cout << std::endl;
-		    
+            count = 0;
+            pthread_mutex_unlock(&shared_lock);
+            
+
+            //pthread_mutex_lock(&locks_0);
+            //pthread_mutex_lock(&locks_1);
+            //pthread_mutex_lock(&locks_2);
+            //pthread_mutex_lock(&locks_3);
+            //std::cout << "4 threads done" << std::endl;
+/*
+        for(int k = 0; k < 16; k++) {
+            //std::cout << start_counter << std::endl;
+            for(int i = 0; i < 40; i++){
+            //for(int j = 0; j < matched_pulses[i].size(); j++){
+                if(k == 0) {
+                    
+                    long_matched_out[i] = long_matched_out[i] - 
+                                last[i] * last[i] + 
+                                matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
+                }
+                else if(k > 0 && k <= 15) {
+            
+                //std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
+                ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
+                    long_matched_out[i] = long_matched_out[i] - 
+                            matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
+                            matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
+                            (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                            unit_offset * unit_time * sum_table[k])]) * 
+                            (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                            unit_offset * unit_time * sum_table[k])]);
+                }
+            }                
+        }
+*/
+    
     		if(matched_pulses.front() != 0 && start == 0) {
     			//std::cout << "filling buffers done" << std::endl;
 		    	start = 1;
@@ -507,14 +578,14 @@ int nearfield_demod_impl::work(int noutput_items,
     		}
             if(start == 1) {
 				//std::cout << std::endl;
-	    		//std::cout << max_header_response << std::endl;
+	    		std::cout << max_header_response << ";" << sample_counter << std::endl;
 
             }
-            /*
+            
             if(max_header_response > threshold) {
-	            std::cout << max_header_response << ", " << sample_counter << ", " << start << std::endl;
+	            //std::cout << max_header_response << ", " << sample_counter << ", " << start << std::endl;
             }
-            */
+            
 
 
             if(sync == 0) {
@@ -523,9 +594,9 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_max_response = max_header_response;
                         last_offset = time_offset;
                     } else {
-                        //time_offset = last_offset;
-                        std::cout << "find header, clock offset = " << time_offset << std::endl;
-                        std::cout << "sample_counter = " << sample_counter << std::endl;
+                        time_offset = last_offset;
+                        //std::cout << "find header, clock offset = " << time_offset << std::endl;
+                        //std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
                         pos = 0;
                         //std::cout << "2.5" << std::endl;
@@ -537,6 +608,9 @@ int nearfield_demod_impl::work(int noutput_items,
                     }
                 }
             }
+
+
+
     
             //header identified, find the data
             if(sync == 1) {
@@ -574,7 +648,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            			                (noise_power * (((unit_offset*time_offset)*unit_time*16.4*16+2*jitter)*2));
                         //std::cout << (data_energy[i] - (noise_power * (1+unit_offset*time_offset) * unit_time * 16 * 0.1))/
 	            		//	(noise_power * (1+unit_offset*time_offset) * unit_time * 16 * 0.1) << std::endl;
-                        std::cout << sig_power << std::endl;
+                        //std::cout << sig_power << std::endl;
 	            		if(sig_power > threshold_sync){
 								demod_data.push_back(1);
 								n++;
