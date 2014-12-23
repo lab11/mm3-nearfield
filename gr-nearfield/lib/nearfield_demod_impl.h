@@ -29,7 +29,8 @@
 namespace gr {
   namespace nearfield {
 
-    std::deque<float> matched_pulses;
+
+
     class nearfield_demod_impl : public nearfield_demod
     {
      private:
@@ -87,12 +88,13 @@ namespace gr {
 	std::ofstream d_log_file;
 	std::string d_gatd_id;
 	time_t last_time;
-    float long_matched_out[40];
+
     float aggregated_header[40];
 	int sub_sample_counter;
     int distance_table[16];
 	int window_length[40];
     int sum_table[16];
+    std::deque<float> matched_pulses;
 	float max_header_response;
     float last_max_response;
 	int pos;	
@@ -104,6 +106,7 @@ namespace gr {
 	float max_current;
 	float avg_current;
 	float data_energy[100];
+    float long_matched_out[40];
 	float data_energy_out;
     int num_rake_filter;
     float unit_offset;
