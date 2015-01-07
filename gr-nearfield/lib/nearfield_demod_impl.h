@@ -37,6 +37,7 @@ namespace gr {
     };
 
 
+
     class nearfield_demod_impl : public nearfield_demod
     {
      private:
@@ -111,7 +112,10 @@ namespace gr {
 	float noise_power;
 	float max_current;
 	float avg_current;
-	float data_energy[100];
+	float data_energy_0[100];
+	float data_energy_1[100];
+    float reset_data;
+    float peak_distance;
     float long_matched_out[40];
 	float data_energy_out;
     int num_rake_filter;
