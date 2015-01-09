@@ -621,7 +621,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         std::cout << "response = " << last_max_response << std::endl;
                         std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
-			last_peak_response = last_max_response;
+			            last_peak_response = last_max_response;
                         pos = 0;
                         peak_distance = 0;
                         //std::cout << "2.5" << std::endl;
@@ -644,7 +644,7 @@ int nearfield_demod_impl::work(int noutput_items,
                             std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
                             std::cout << "sample_counter = " << sample_counter << std::endl;
                             sync = 1;
-			    last_peak_response = last_max_response;
+			                last_peak_response = last_max_response;
                             pos = 0;
                             peak_distance = 0;
                             reset_data = 1;
@@ -673,8 +673,9 @@ int nearfield_demod_impl::work(int noutput_items,
 	            		data_energy_1[i] = 0;
 	            	}
                     data_energy_out = 0;
-		    n = 0;
-		    demod_data.clear();
+		            n = 0;
+		            demod_data.clear();
+                    pos = 0;
                 }    
                 
                 //std::cout << current << std::endl;
@@ -693,9 +694,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         //std::cout << "1_up: " << int(((1+unit_offset*last_offset)*unit_time*16*(i+1.5))+((unit_offset*last_offset)*unit_time*16*16)+jitter) << std::endl;
 	            		if(pos>=int(((1+unit_offset*last_offset)*unit_time*16*(i+1))-((unit_offset*(last_offset))*unit_time*16*16)-2*jitter)&&
 	            		pos<=int(((1+unit_offset*last_offset)*unit_time*16*(i+1))+((unit_offset*(last_offset))*unit_time*16*16)+2*jitter)){
-                            if(pos==1+int(((1+unit_offset*last_offset)*unit_time*16*(i+1))-((unit_offset*(last_offset))*unit_time*16*16)-2*jitter)){
-                                //std::cout << "2" << std::endl;
-                            }
+
 	            			data_energy_0[i] = current * current + data_energy_0[i];
                             //data_queue[i].pop_front();
                             //data_queue[i].push_back(current);
@@ -784,6 +783,7 @@ int nearfield_demod_impl::work(int noutput_items,
                 reset_data = 0;
                 peak_distance = 0;
                 last_offset = 0;
+                pos = 0;
 				for(int i = 0; i < N; i++){
 	            	data_energy_0[i] = 0; 
 	            	data_energy_1[i] = 0; 
