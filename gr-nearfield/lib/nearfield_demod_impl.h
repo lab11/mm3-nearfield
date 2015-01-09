@@ -109,6 +109,7 @@ namespace gr {
 	int start;
 	float last[40];
     int subsample_rate;
+	float last_peak_response;
 	float noise_power;
 	float max_current;
 	float avg_current;
@@ -119,7 +120,7 @@ namespace gr {
     float long_matched_out[40];
 	float data_energy_out;
     int num_rake_filter;
-    std::deque<float> matched_pulses;
+    //std::deque<float> matched_pulses;
     float unit_offset;
     float max_offset;
     int rake_offset[40];
