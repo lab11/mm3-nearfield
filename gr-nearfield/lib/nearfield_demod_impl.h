@@ -76,6 +76,7 @@ namespace gr {
 	float last_pulse;
 	float max_sample;
     int last_offset;    
+    int correct_offset;    
     long int sample_counter;
 	std::queue<float> lastpulses;
 	float threshold_sync;
@@ -97,6 +98,7 @@ namespace gr {
 	time_t last_time;
 
     float aggregated_header[40];
+	int scores[40];
 	int sub_sample_counter;
     int distance_table[16];
 	int window_length[40];
@@ -124,6 +126,7 @@ namespace gr {
     float unit_offset;
     float max_offset;
     int rake_offset[40];
+    int process_counter;
 
     pthread_t threads_0;
     pthread_t threads_1;
