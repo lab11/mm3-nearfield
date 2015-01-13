@@ -85,7 +85,7 @@ namespace gr {
     float window_size;
 	//std::deque<float> matched_pulses;
 	std::deque<float> data_queue[100];
-	std::deque<float> lastsamples;
+	float lastsamples[8];
 	float energy;
 	float all_pulse_energy[40];
 	int sample_ctr;

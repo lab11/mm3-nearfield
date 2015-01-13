@@ -59,7 +59,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 1.5;            // threshold set after observing data
+	threshold = 0.5;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -124,7 +124,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         	lastpulses.push(0);
 	}
         for (int k = 0; k < 7; k++ ) {
-        	lastsamples.push_front(0);
+        	lastsamples[k] = 0;
 	}
 	for (int k = 0; k < num_rake_filter; k++){
 
@@ -442,18 +442,17 @@ int nearfield_demod_impl::work(int noutput_items,
 		float transition;
         sample_counter++;
 
-
         //do matched filter first
-		energy = energy + in[nn] * in[nn] - lastpulses[0] * lastpulses[0];
-		lastpulses.pop_front();
-		lastpulses.push_back(in[nn]);
-		
-		for(int m=0; m < 7; m++){
-			lastsamples[m] = lastsamples[m+1];
-		}
-		
-		lastsamples.pop_front();
-		lastsamples.push_back(in[nn]);
+                float past = lastpulses.front();
+                lastpulses.pop();
+                energy = energy + in[nn] * in[nn] - past * past;
+                lastpulses.push(in[nn]);
+                for(int m=0; m < 7; m++){
+                        lastsamples[m] = lastsamples[m+1];
+                }
+                lastsamples[7] = in[nn];
+
+
 		/*
 		for (std::deque<float>::iterator it = lastsamples.begin(); it!=lastsamples.end(); ++it)
     				std::cout << ' ' << *it;
@@ -489,13 +488,13 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[3] * 1.38 + lastsamples[4] * 1.35 + lastsamples[5] * 0.91 + 
 			lastsamples[6] * 0.8 + lastsamples[7] * 0.91)/sqrt(energy);
 			
-		std::cout << matched << std::endl;
+		//std::cout << matched << std::endl;
 		
 
 
 	//std::cout << "get: " << in[nn] << std::endl;
-    	if(in[nn] > max_current){
-			max_current = in[nn];
+    	if(matched > max_current){
+			max_current = matched;
 		//std::cout << "change into: " << max_current << std::endl;
 
 	    	//avg_current += in[nn];
@@ -657,9 +656,9 @@ int nearfield_demod_impl::work(int noutput_items,
                         time_offset = last_offset;
                         correct_offset = last_offset;
 
-                       	//std::cout << "find header, clock offset = " << time_offset << std::endl;
-                        //std::cout << "response = " << last_max_response << std::endl;
-                        //std::cout << "sample_counter = " << sample_counter << std::endl;
+                       	std::cout << "find header, clock offset = " << time_offset << std::endl;
+                        std::cout << "response = " << last_max_response << std::endl;
+                        std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
 			            last_peak_response = last_max_response;
                         pos = 0;
@@ -681,9 +680,9 @@ int nearfield_demod_impl::work(int noutput_items,
                             time_offset = last_offset;
                             correct_offset = last_offset;
 
-                            //std::cout << "find new header, clock offset = " << time_offset << std::endl;
-                            //std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
-                            //std::cout << "sample_counter = " << sample_counter << std::endl;
+                            std::cout << "find new header, clock offset = " << time_offset << std::endl;
+                            std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
+                            std::cout << "sample_counter = " << sample_counter << std::endl;
                             sync = 1;
 			                last_peak_response = last_max_response;
                             pos = 0;
@@ -802,7 +801,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            double seconds = difftime(current_time, last_time);
 	            last_time = current_time;
 				char* dt = std::ctime(&current_time);
-				/*
+				
 				std::cout << "SENDING MESSAGE" << std::endl;
 				std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
 				d_log_file << "SENDING MESSAGE" << std::endl;
@@ -813,7 +812,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				}
 				d_log_file << std::endl;
 				std::cout << std::endl;
-				*/
+				
 			
 				sync = 0;                        // start over looking for sync
 				prf_vec.clear();
