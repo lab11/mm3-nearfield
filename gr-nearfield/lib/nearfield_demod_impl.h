@@ -132,18 +132,35 @@ namespace gr {
     pthread_t threads_1;
     pthread_t threads_2;
     pthread_t threads_3;
+
+    pthread_t threads_4;
+    pthread_t threads_5;
+    pthread_t threads_6;
+    pthread_t threads_7;
+
     pthread_mutex_t locks_0;
     pthread_mutex_t locks_1;
     pthread_mutex_t locks_2;
     pthread_mutex_t locks_3;
+
+    pthread_mutex_t locks_4;
+    pthread_mutex_t locks_5;
+    pthread_mutex_t locks_6;
+    pthread_mutex_t locks_7;
+
     pthread_mutex_t shared_lock;
     pthread_cond_t shared_cond;
     int count;
-    int irets[4];
+    int irets[8];
     object Objs_0;
     object Objs_1;
     object Objs_2;
     object Objs_3;
+    object Objs_4;
+    object Objs_5;
+    object Objs_6;
+    object Objs_7;
+
 
      public:
       nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);

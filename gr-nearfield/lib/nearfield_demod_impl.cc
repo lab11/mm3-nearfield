@@ -59,7 +59,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.5;            // threshold set after observing data
+	threshold = 0.6;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -100,14 +100,14 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	max_header_response = 0;
 	last_peak_response = 0;
 	process_counter = 0;
-    unit_time = 120000.0/(16 * subsample_rate);
+    unit_time = 143000.0/(16 * subsample_rate);
     //std::cout << unit_time << std::endl;
     time_offset = 0;
 	pos = 0;
     reset_data = 0;
     peak_distance = 0;
     jitter = unit_time * 16 * 0.01;
-    //jitter = int(1);
+    //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
     num_rake_filter = 40;
@@ -201,20 +201,37 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
     Objs_0.C = this;
     Objs_0.start_num =0;
-    Objs_0.end_num =10;
+    Objs_0.end_num =5;
     Objs_0.thread_num =0;
     Objs_1.C = this;
-    Objs_1.start_num =10;
-    Objs_1.end_num =20;
+    Objs_1.start_num =5;
+    Objs_1.end_num =10;
     Objs_1.thread_num =1;
     Objs_2.C = this;
-    Objs_2.start_num =20;
-    Objs_2.end_num =30;
+    Objs_2.start_num =10;
+    Objs_2.end_num =15;
     Objs_2.thread_num =2;
     Objs_3.C = this;
-    Objs_3.start_num =30;
-    Objs_3.end_num=40;
+    Objs_3.start_num =15;
+    Objs_3.end_num=20;
     Objs_3.thread_num =3;
+    Objs_4.C = this;
+    Objs_4.start_num =20;
+    Objs_4.end_num =25;
+    Objs_4.thread_num =4;
+    Objs_5.C = this;
+    Objs_5.start_num =25;
+    Objs_5.end_num =30;
+    Objs_5.thread_num =5;
+    Objs_6.C = this;
+    Objs_6.start_num =30;
+    Objs_6.end_num =35;
+    Objs_6.thread_num =6;
+    Objs_7.C = this;
+    Objs_7.start_num =35;
+    Objs_7.end_num=40;
+    Objs_7.thread_num =7;
+
 
     count = 0;
     //std::cerr << "start" << std::endl;
@@ -234,6 +251,15 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     pthread_mutex_lock(&locks_2);
     locks_3 = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_lock(&locks_3);
+    locks_4 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_4);
+    locks_5 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_5);
+    locks_6 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_6);
+    locks_7 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_7);
+
 
     //std::cerr << "3" << std::endl;
     
@@ -241,6 +267,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     irets[1] = pthread_create(&threads_1, NULL, &rake_filter_process_helper, &Objs_1);
     irets[2] = pthread_create(&threads_2, NULL, &rake_filter_process_helper, &Objs_2);
     irets[3] = pthread_create(&threads_3, NULL, &rake_filter_process_helper, &Objs_3);
+    
+    irets[4] = pthread_create(&threads_4, NULL, &rake_filter_process_helper, &Objs_4);
+    irets[5] = pthread_create(&threads_5, NULL, &rake_filter_process_helper, &Objs_5);
+    irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
+    irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
+
 
     //std::cerr << "4" << std::endl;
 
@@ -291,8 +323,16 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
             pthread_mutex_lock(&locks_1);
         }else if(thread_num == 2){
             pthread_mutex_lock(&locks_2);
-        }else{
+        }else if(thread_num == 3){
             pthread_mutex_lock(&locks_3);
+        }else if(thread_num == 4){
+            pthread_mutex_lock(&locks_4);
+        }else if(thread_num == 5){
+            pthread_mutex_lock(&locks_5);
+        }else if(thread_num == 6){
+            pthread_mutex_lock(&locks_6);
+        }else{
+            pthread_mutex_lock(&locks_7);
         }
             
 
@@ -346,7 +386,7 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
         //Lock mutex()
         pthread_mutex_lock(&shared_lock);
         count = count + 1;
-        if(count == 4){
+        if(count == 8){
             pthread_cond_signal(&shared_cond);
         }
         pthread_mutex_unlock(&shared_lock);
@@ -363,7 +403,11 @@ nearfield_demod_impl::~nearfield_demod_impl() {
     pthread_mutex_destroy(&locks_1);
     pthread_mutex_destroy(&locks_2);
     pthread_mutex_destroy(&locks_3);
-        //pthread_join(thread[i], NULL);
+    pthread_mutex_destroy(&locks_4);
+    pthread_mutex_destroy(&locks_5);
+    pthread_mutex_destroy(&locks_6);
+    pthread_mutex_destroy(&locks_7);
+       //pthread_join(thread[i], NULL);
 
     pthread_mutex_destroy(&shared_lock);
     pthread_cond_destroy(&shared_cond);
@@ -483,10 +527,14 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
 			lastsamples[6] * 1.5921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
 		*/
-	       		 
-		float matched = (lastsamples[0] * 0.8 + lastsamples[1] * 1.34 + lastsamples[2] * 1.35 + 
+		float matched;
+		if(sample_counter < 101) {
+			matched = 0.01;
+		} else { 
+			matched = (lastsamples[0] * 0.8 + lastsamples[1] * 1.34 + lastsamples[2] * 1.35 + 
 			lastsamples[3] * 1.38 + lastsamples[4] * 1.35 + lastsamples[5] * 0.91 + 
 			lastsamples[6] * 0.8 + lastsamples[7] * 0.91)/sqrt(energy);
+		}
 			
 		//std::cout << matched << std::endl;
 		
@@ -533,10 +581,14 @@ int nearfield_demod_impl::work(int noutput_items,
             pthread_mutex_unlock(&locks_1);
             pthread_mutex_unlock(&locks_2);
             pthread_mutex_unlock(&locks_3);
-            
+            pthread_mutex_unlock(&locks_4);
+            pthread_mutex_unlock(&locks_5);
+            pthread_mutex_unlock(&locks_6);
+            pthread_mutex_unlock(&locks_7);
+                    
             
             pthread_mutex_lock(&shared_lock);
-            while(count < 4){
+            while(count < 8){
                 pthread_cond_wait(&shared_cond, &shared_lock);
             }
             count = 0;
@@ -603,11 +655,11 @@ int nearfield_demod_impl::work(int noutput_items,
 	    				(all_pulse_energy[i] - long_matched_out[i]);
 	    		*/
                 aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i])/(noise_power * window_length[i]);
-		if(i == 0 && start == 1){
+		//if(i == 0 && start == 1){
 			//std::cout << "noise_power: " << noise_power << ", window_length: " << window_length[i] << std::endl;
 			//std::cout << "background: " << noise_power * window_length[i] << std::endl;
 			//std::cout << "sig: " << long_matched_out[i] << std::endl;
-		}	
+		//}	
                 //aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i]);	
 		
 
@@ -628,19 +680,19 @@ int nearfield_demod_impl::work(int noutput_items,
     		}
 
 			//std::cout << std::endl;
-            if(start == 0) {
+            //if(start == 0) {
 				//std::cout << std::endl;
 	    		//std::cout << 0 << ";" << sample_counter << std::endl;
-            }
+            //}
             
-            if(start == 1) {
+            //if(start == 1) {
 				//std::cout << std::endl;
-	    		//std::cout << max_header_response << ";" << sample_counter << std::endl;
-            }
+	    //		std::cout << max_header_response << ";" << sample_counter << std::endl;
+            //}
             
-            if(max_header_response > threshold) {
+            //if(max_header_response > threshold) {
 	            //std::cout << max_header_response << ", " << sample_counter << ", " << start << std::endl;
-            }
+            //}
 
             if(sync == 1) {
                 peak_distance++;
@@ -656,9 +708,9 @@ int nearfield_demod_impl::work(int noutput_items,
                         time_offset = last_offset;
                         correct_offset = last_offset;
 
-                       	std::cout << "find header, clock offset = " << time_offset << std::endl;
-                        std::cout << "response = " << last_max_response << std::endl;
-                        std::cout << "sample_counter = " << sample_counter << std::endl;
+                       	//std::cout << "find header, clock offset = " << time_offset << std::endl;
+                        //std::cout << "response = " << last_max_response << std::endl;
+                        //std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
 			            last_peak_response = last_max_response;
                         pos = 0;
@@ -680,9 +732,9 @@ int nearfield_demod_impl::work(int noutput_items,
                             time_offset = last_offset;
                             correct_offset = last_offset;
 
-                            std::cout << "find new header, clock offset = " << time_offset << std::endl;
-                            std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
-                            std::cout << "sample_counter = " << sample_counter << std::endl;
+                            //std::cout << "find new header, clock offset = " << time_offset << std::endl;
+                            //std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
+                            //std::cout << "sample_counter = " << sample_counter << std::endl;
                             sync = 1;
 			                last_peak_response = last_max_response;
                             pos = 0;
@@ -732,25 +784,33 @@ int nearfield_demod_impl::work(int noutput_items,
                         //std::cout << "1_down: " << int(((1+unit_offset*last_offset)*unit_time*16*(i+1.5))-((unit_offset*last_offset)*unit_time*16*16)-jitter) << std::endl;
 
                         //std::cout << "1_up: " << int(((1+unit_offset*last_offset)*unit_time*16*(i+1.5))+((unit_offset*last_offset)*unit_time*16*16)+jitter) << std::endl;
-	            		if(pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))-((unit_offset*correct_offset)*unit_time*16*16)-2*jitter)&&
-	            		pos<=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))+((unit_offset*correct_offset)*unit_time*16*16)+2*jitter)){
+	            		if(pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))-((unit_offset*correct_offset)*unit_time*16*16+2*jitter))&&
+	            		//if(pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))-(2*jitter))&&
+	            		pos<=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))+((unit_offset*correct_offset)*unit_time*16*16+2*jitter))){
 
-	            			data_energy_0[i] = current * current + data_energy_0[i];
-					if(i == 0) {
+	            			//data_energy_0[i] = current * current + data_energy_0[i];
+					if(data_energy_0[i] < current){
+	            				data_energy_0[i] = current * current;
+					}
+					//if(i == 0) {
 						//std::cout << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))-((unit_offset*correct_offset)*unit_time*16*16)-2*jitter) << ", end: " << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))+((unit_offset*correct_offset)*unit_time*16*16)+2*jitter) << std::endl;
 						//std::cout << "data energy increase: " << data_energy_0[i] << ", " << current * current << ", pos: " << pos << std::endl;
-					}
+					//}
                             //data_queue[i].pop_front();
                             //data_queue[i].push_back(current);
                             //std::cout << current << std::endl;
 	            		}
-				if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))-((unit_offset*correct_offset)*unit_time*16*16)-2*jitter)&&
-	            		    pos<=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))+((unit_offset*correct_offset)*unit_time*16*16)+2*jitter)){
-	            			data_energy_1[i] = current * current + data_energy_1[i];
-					if(i == 0) {
+				if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))-((unit_offset*correct_offset)*unit_time*16*16+2*jitter))&&
+				//if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))-(2*jitter))&&
+	            		    pos<=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))+((unit_offset*correct_offset)*unit_time*16*16+2*jitter))){
+	            			//data_energy_1[i] = current * current + data_energy_1[i];
+					if(data_energy_1[i] < current){
+	            				data_energy_1[i] = current * current;
+					}
+					//if(i == 0) {
 						//std::cout << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.5))-((unit_offset*correct_offset)*unit_time*16*16)-2*jitter) << ", end: " << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.5))+((unit_offset*correct_offset)*unit_time*16*16)+2*jitter) << std::endl;
 						//std::cout << "data energy increase: " << data_energy_1[i] << ", " << current * current << ", pos: " << pos << std::endl;
-					}
+					//}
                         }
 	            	}
 
@@ -761,14 +821,14 @@ int nearfield_demod_impl::work(int noutput_items,
 	            	for(int i = 0; i < N; i++) {
                         //float sig_power = data_energy[i] / (data_energy_out/N); 
                         //std::cout << data_energy_0[i] << "; " << data_energy_1[i] << std::endl;
-                        float sig_power_0 = (data_energy_0[i] - (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+2*jitter)*2)))/
-	            			                (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+2*jitter)*2));
-                        float sig_power_1 = (data_energy_1[i] - (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+2*jitter)*2)))/
-	            			                (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+2*jitter)*2));
+                        //float sig_power_0 = (data_energy_0[i] - (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+4*jitter))))/
+	            	//		                (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+4*jitter)));
+                        //float sig_power_1 = (data_energy_1[i] - (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+4*jitter))))/
+	            	//		                (noise_power * (((unit_offset*correct_offset)*unit_time*16*16+4*jitter)));
                         //std::cout << (data_energy[i] - (noise_power * (1+unit_offset*time_offset) * unit_time * 16 * 0.1))/
 	            		//	(noise_power * (1+unit_offset*time_offset) * unit_time * 16 * 0.1) << std::endl;
                         //std::cout << sig_power_0 << "; " << sig_power_1 << std::endl;
-	            		if(sig_power_0 > sig_power_1){
+	            		if(data_energy_0[i] > data_energy_1[i]){
 								demod_data.push_back(1);
 								n++;
 	            		} else {
@@ -801,7 +861,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            double seconds = difftime(current_time, last_time);
 	            last_time = current_time;
 				char* dt = std::ctime(&current_time);
-				
+					
 				std::cout << "SENDING MESSAGE" << std::endl;
 				std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
 				d_log_file << "SENDING MESSAGE" << std::endl;
