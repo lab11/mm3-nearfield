@@ -484,9 +484,9 @@ int nearfield_demod_impl::work(int noutput_items,
 		//Local non-persistent variables
 		float rx_data;
 		float transition;
-        sample_counter++;
+        	sample_counter++;
 
-        //do matched filter first
+        	//do matched filter first
                 float past = lastpulses.front();
                 lastpulses.pop();
                 energy = energy + in[nn] * in[nn] - past * past;
@@ -495,38 +495,6 @@ int nearfield_demod_impl::work(int noutput_items,
                         lastsamples[m] = lastsamples[m+1];
                 }
                 lastsamples[7] = in[nn];
-
-
-		/*
-		for (std::deque<float>::iterator it = lastsamples.begin(); it!=lastsamples.end(); ++it)
-    				std::cout << ' ' << *it;
-		*/
-		//std::cout << "in: " << in[nn-filt_count] << std::endl;	
-		//float energy_template = 4.5211;
-		//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
-		//float energy_template = 5.1.51885;
-		//current = (in[nn] * 0.5914 + in[nn-1] * 1.5921 + in[nn-2] * 1.2286 + 
-		//in[nn-3] * 0.8965 + in[nn-4] * 0.5363 + in[nn-5] * 0.324 + 
-		//in[nn-6] * 0.1764 + in[nn-7] * 0.1156)/sqrt(energy*4.5211);
-		//std::cout << "energy: " << energy << std::endl;
-		//std::cout << "current: " << current << std::endl;	
-		//current = (in[nn] * 0.1156 + in[nn-1] * 0.1764 + in[nn-2] * 0.324 + 
-		//	in[nn-3] * 0.5363 + in[nn-4] * 0.8965 + in[nn-5] * 1.2286 + 
-		//	in[nn-6] * 1.5921 + in[nn-7] * 0.5914)/sqrt(energy*4.5211);
-		
-		//current = (in[nn] * 0.01336336 + in[nn-1] * 0.031.5696 + in[nn-2] * 0.104976 + 
-		//	in[nn-3] * 0.28761769 + in[nn-4] * 0.80371225 + in[nn-5] * 1.50945796 + 
-		//	in[nn-6] * 1.42110241 + in[nn-7] * 0.34975num_rake_filter-16)/sqrt(energy * energy_template);
-		
-		//current = (lastsamples[0] * 0.01336336 + lastsamples[1] * 0.031.5696 + lastsamples[2] * 0.104976 + 
-		//	lastsamples[3] * 0.28761769 + lastsamples[4] * 0.80371225 + lastsamples[5] * 1.50945796 + 
-		//	lastsamples[6] * 1.42110241 + lastsamples[7] * 0.34975num_rake_filter-16)/sqrt(energy * energy_template);
-	    
-       		/* 
-		in[nn] = (lastsamples[0] * 0.1156 + lastsamples[1] * 0.1764 + lastsamples[2] * 0.324 + 
-			lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
-			lastsamples[6] * 1.5921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
-		*/
 		float matched;
 		if(sample_counter < 101) {
 			matched = 0.01;
