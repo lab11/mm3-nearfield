@@ -22,6 +22,7 @@
 #include "config.h"
 #endif
 
+#include <gnuradio/filter/fir_filter.h>
 #include <gnuradio/io_signature.h>
 #include "nearfield_demod_impl.h"
 #include <numeric>
@@ -57,6 +58,15 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 			gr::io_signature::make(1, 1, sizeof(float)),
 			gr::io_signature::make(0, 1, sizeof(float))),
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
+
+	//Prepare FIR filter for internal use
+	ntaps = 8;
+	float taps[ntaps] = {0.91, 0.8, 0.91, 1.35, 1.38, 1.35, 1.34, 0.8};
+	d_fir = new gr::filter::kernel::fir_filter_fff(1, ntaps);
+	set_history(d_fir->ntaps());
+
+	const int alignment_multiple = volk_get_alignment() / sizeof(float);
+	set_alignment(std::max(1, alignment_multiple));
 
 	// variables
 	threshold = 0.6;            // threshold set after observing data
@@ -120,12 +130,6 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	prf_vec.clear();
 	demod_data.clear();
 	noise_power = 0;
-        for (int k = 0; k < 100; k++ ) {
-        	lastpulses.push(0);
-	}
-        for (int k = 0; k < 7; k++ ) {
-        	lastsamples[k] = 0;
-	}
 	for (int k = 0; k < num_rake_filter; k++){
 
 		//std::cout << "size of buffer[" << k << "] = " << (345 * unit_time * (1+unit_offset*k) + 2 * jitter + 345 * unit_offset * unit_time) << std::endl; 
@@ -142,6 +146,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
 		//std::cout << "size of buffer[" << k << "] = " << matched_pulses[k].size() << std::endl; 
 	}
+	past = 0;
 	energy = 0;
         for(int i = 0; i < num_rake_filter; i++){
 		long_matched_out[i] = 0;     
@@ -398,6 +403,8 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
  * Our virtual destructor.
  */
 nearfield_demod_impl::~nearfield_demod_impl() {
+	delete d_fir;
+
 	d_log_file.close();
     pthread_mutex_destroy(&locks_0);
     pthread_mutex_destroy(&locks_1);
@@ -487,21 +494,14 @@ int nearfield_demod_impl::work(int noutput_items,
         	sample_counter++;
 
         	//do matched filter first
-                float past = lastpulses.front();
-                lastpulses.pop();
-                energy = energy + in[nn] * in[nn] - past * past;
-                lastpulses.push(in[nn]);
-                for(int m=0; m < 7; m++){
-                        lastsamples[m] = lastsamples[m+1];
-                }
-                lastsamples[7] = in[nn];
+		float in_sqr = in[nn+ntaps-1] * in[nn+ntaps-1];
+                energy = energy + in_sqr - past;
+		past = in_sqr;
 		float matched;
 		if(sample_counter < 101) {
 			matched = 0.01;
 		} else { 
-			matched = (lastsamples[0] * 0.8 + lastsamples[1] * 1.34 + lastsamples[2] * 1.35 + 
-			lastsamples[3] * 1.38 + lastsamples[4] * 1.35 + lastsamples[5] * 0.91 + 
-			lastsamples[6] * 0.8 + lastsamples[7] * 0.91)/sqrt(energy);
+			matched = d_fir->filter(&in[nn])/sqrt(energy);
 		}
 			
 		//std::cout << matched << std::endl;

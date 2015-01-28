@@ -78,15 +78,14 @@ namespace gr {
     int last_offset;    
     int correct_offset;    
     long int sample_counter;
-	std::queue<float> lastpulses;
 	float threshold_sync;
     float unit_time;
     int time_offset;
     float window_size;
 	//std::deque<float> matched_pulses;
 	std::deque<float> data_queue[100];
-	float lastsamples[8];
 	float energy;
+	float past;
 	float all_pulse_energy[40];
 	int sample_ctr;
 	std::vector<float> pulse_vec;
@@ -96,6 +95,10 @@ namespace gr {
 	std::ofstream d_log_file;
 	std::string d_gatd_id;
 	time_t last_time;
+
+	//FIR filter necessities
+	int ntaps;
+	gr::filter::kernel::fir_filter_fff *d_fir;
 
     float aggregated_header[40];
 	int scores[40];
