@@ -97,7 +97,6 @@ namespace gr {
 	time_t last_time;
 
 	//FIR filter necessities
-	int ntaps;
 	gr::filter::kernel::fir_filter_fff *d_fir;
 
     float aggregated_header[40];

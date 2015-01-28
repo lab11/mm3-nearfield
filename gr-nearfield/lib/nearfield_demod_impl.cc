@@ -22,8 +22,11 @@
 #include "config.h"
 #endif
 
+#define NTAPS 8
+
 #include <gnuradio/filter/fir_filter.h>
 #include <gnuradio/io_signature.h>
+#include <volk/volk.h>
 #include "nearfield_demod_impl.h"
 #include <numeric>
 #include <iterator>
@@ -60,9 +63,8 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	//Prepare FIR filter for internal use
-	ntaps = 8;
-	float taps[ntaps] = {0.91, 0.8, 0.91, 1.35, 1.38, 1.35, 1.34, 0.8};
-	d_fir = new gr::filter::kernel::fir_filter_fff(1, ntaps);
+	float taps[NTAPS] = {0.91, 0.8, 0.91, 1.35, 1.38, 1.35, 1.34, 0.8};
+	d_fir = new gr::filter::kernel::fir_filter_fff(1, std::vector<float>(taps,taps+NTAPS));
 	set_history(d_fir->ntaps());
 
 	const int alignment_multiple = volk_get_alignment() / sizeof(float);
@@ -494,7 +496,7 @@ int nearfield_demod_impl::work(int noutput_items,
         	sample_counter++;
 
         	//do matched filter first
-		float in_sqr = in[nn+ntaps-1] * in[nn+ntaps-1];
+		float in_sqr = in[nn+NTAPS-1] * in[nn+NTAPS-1];
                 energy = energy + in_sqr - past;
 		past = in_sqr;
 		float matched;
