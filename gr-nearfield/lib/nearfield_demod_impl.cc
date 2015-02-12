@@ -357,9 +357,19 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
                         matched_pulses[i][2 * jitter + 1] * matched_pulses[i][2 * jitter + 1] << std::endl;
                     }
                     */
+                    /*
                     long_matched_out[i] = long_matched_out[i] - 
                                 last[i] * last[i] + 
                                 matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
+                    */               
+                    float max_pulse = 0;     
+                    for(int loc = 0; loc <= rake_offset[i] + 2 * jitter; loc++){
+                        if(matched_pulses[loc] > max_pulse) {
+                            max_pulse = matched_pulses[loc];
+                        }
+                    }
+                    long_matched_out[i] += max_pulse;
+
 
 		    /*
 		    if(matched_pulses[rake_offset[i] + 2 * jitter] > 1) {
@@ -371,6 +381,8 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
             
                 //std::cout << "k = " << k << ", insert: " << (1+unit_offset*i) * unit_time * sum_table[k] 
                 ////		<< ", delete: " << (1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + unit_offset * unit_time * sum_table[k] << std::endl;
+
+                    /*
                     long_matched_out[i] = long_matched_out[i] - 
                             matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] * 
                             matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] - 1)] +
@@ -378,6 +390,17 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
                             unit_offset * unit_time * sum_table[k])]) * 
                             (matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
                             unit_offset * unit_time * sum_table[k])]);
+
+                    */
+
+                    float max_pulse = 0;     
+                    for(int loc = rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k]); loc <= rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
+                            unit_offset * unit_time * sum_table[k]); loc++){
+                        if(matched_pulses[loc] > max_pulse) {
+                            max_pulse = matched_pulses[loc];
+                        }
+                    }
+                    long_matched_out[i] += max_pulse;
 		    /*
 		    if((matched_pulses[rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
                             unit_offset * unit_time * sum_table[k])]) > 1) {
@@ -540,6 +563,7 @@ int nearfield_demod_impl::work(int noutput_items,
             for(int i = 0; i< num_rake_filter; i++){
 	    		last[i] = matched_pulses[rake_offset[i]];
 		    	all_pulse_energy[i] = all_pulse_energy[i] + current * current - last[i] * last[i];
+                long_matched_out[i] = 0;
 
     		}
 		    matched_pulses.pop_front();
@@ -624,7 +648,8 @@ int nearfield_demod_impl::work(int noutput_items,
 						(all_pulse_energy[i] * window_length[i])/matched_pulses[i].size())/
 	    				(all_pulse_energy[i] - long_matched_out[i]);
 	    		*/
-                aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i])/(noise_power * window_length[i]);
+                //aggregated_header[i] = (long_matched_out[i] - noise_power * window_length[i])/(noise_power * window_length[i]);
+                aggregated_header[i] = long_matched_out[i];
 		//if(i == 0 && start == 1){
 			//std::cout << "noise_power: " << noise_power << ", window_length: " << window_length[i] << std::endl;
 			//std::cout << "background: " << noise_power * window_length[i] << std::endl;
