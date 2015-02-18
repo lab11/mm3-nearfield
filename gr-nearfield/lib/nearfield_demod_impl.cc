@@ -504,7 +504,7 @@ int nearfield_demod_impl::work(int noutput_items,
 			lastsamples[6] * 0.8 + lastsamples[7] * 0.91)/sqrt(energy);
 		}
 			
-		//std::cout << matched << std::endl;
+		std::cout << matched << std::endl;
 		
 
 
@@ -829,7 +829,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            double seconds = difftime(current_time, last_time);
 	            last_time = current_time;
 				char* dt = std::ctime(&current_time);
-					
+				/*		
 				std::cout << "SENDING MESSAGE" << std::endl;
 				std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
 				d_log_file << "SENDING MESSAGE" << std::endl;
@@ -840,7 +840,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				}
 				d_log_file << std::endl;
 				std::cout << std::endl;
-				
+				*/
 			
 				sync = 0;                        // start over looking for sync
 				prf_vec.clear();
