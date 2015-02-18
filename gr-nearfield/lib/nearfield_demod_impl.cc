@@ -63,7 +63,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	//Prepare FIR filter for internal use
-	float taps[NTAPS] = {0.91, 0.8, 0.91, 1.35, 1.38, 1.35, 1.34, 0.8};
+	float taps[NTAPS] = {0.8, 1.34, 1.35, 1.38, 1.35, 0.91, 0.8, 0.91};
 	d_fir = new gr::filter::kernel::fir_filter_fff(1, std::vector<float>(taps,taps+NTAPS));
 	set_history(d_fir->ntaps());
 
@@ -71,7 +71,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	set_alignment(std::max(1, alignment_multiple));
 
 	// variables
-	threshold = 0.6;            // threshold set after observing data
+	threshold = 10000000;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -132,6 +132,9 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	prf_vec.clear();
 	demod_data.clear();
 	noise_power = 0;
+        for (int k = 0; k < 100; k++ ) {
+        	lastpulses.push(0);
+	}
 	for (int k = 0; k < num_rake_filter; k++){
 
 		//std::cout << "size of buffer[" << k << "] = " << (345 * unit_time * (1+unit_offset*k) + 2 * jitter + 345 * unit_offset * unit_time) << std::endl; 
@@ -148,7 +151,6 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
 		//std::cout << "size of buffer[" << k << "] = " << matched_pulses[k].size() << std::endl; 
 	}
-	past = 0;
 	energy = 0;
         for(int i = 0; i < num_rake_filter; i++){
 		long_matched_out[i] = 0;     
@@ -519,9 +521,11 @@ int nearfield_demod_impl::work(int noutput_items,
         	sample_counter++;
 
         	//do matched filter first
+                float past = lastpulses.front();
+                lastpulses.pop();
 		float in_sqr = in[nn+NTAPS-1] * in[nn+NTAPS-1];
-                energy = energy + in_sqr - past;
-		past = in_sqr;
+                energy = energy + in_sqr - past*past;
+                lastpulses.push(in[nn]);
 		float matched;
 		if(sample_counter < 101) {
 			matched = 0.01;
@@ -529,7 +533,7 @@ int nearfield_demod_impl::work(int noutput_items,
 			matched = d_fir->filter(&in[nn])/sqrt(energy);
 		}
 			
-		//std::cout << matched << std::endl;
+		std::cout << matched << std::endl;
 		
 
 
