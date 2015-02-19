@@ -71,7 +71,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	set_alignment(std::max(1, alignment_multiple));
 
 	// variables
-	threshold = 10000000;            // threshold set after observing data
+	threshold = 30;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -112,7 +112,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	max_header_response = 0;
 	last_peak_response = 0;
 	process_counter = 0;
-    unit_time = 143000.0/(16 * subsample_rate);
+    unit_time = 120000.0/(16 * subsample_rate);
     //std::cout << unit_time << std::endl;
     time_offset = 0;
 	pos = 0;
@@ -365,7 +365,7 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
                                 matched_pulses[rake_offset[i] + 2 * jitter] * matched_pulses[rake_offset[i] + 2 * jitter];
                     */               
                     float max_pulse = 0;     
-                    for(int loc = 0; loc <= rake_offset[i] + 2 * jitter; loc++){
+                    for(int loc = rake_offset[i]; loc <= rake_offset[i] + 2 * jitter; loc++){
                         if(matched_pulses[loc] > max_pulse) {
                             max_pulse = matched_pulses[loc];
                         }
@@ -533,13 +533,14 @@ int nearfield_demod_impl::work(int noutput_items,
 			matched = d_fir->filter(&in[nn])/sqrt(energy);
 		}
 			
-		std::cout << matched << std::endl;
+		//std::cout << matched << std::endl;
 		
 
 
 	//std::cout << "get: " << in[nn] << std::endl;
     	if(matched > max_current){
 			max_current = matched;
+			//max_current = in[nn];
 		//std::cout << "change into: " << max_current << std::endl;
 
 	    	//avg_current += in[nn];
@@ -683,11 +684,15 @@ int nearfield_demod_impl::work(int noutput_items,
 				//std::cout << std::endl;
 	    		//std::cout << 0 << ";" << sample_counter << std::endl;
             //}
-            
-            //if(start == 1) {
+           
+	 
+            if(start == 1) {
 				//std::cout << std::endl;
 	    //		std::cout << max_header_response << ";" << sample_counter << std::endl;
-            //}
+            }
+
+		
+		
             
             //if(max_header_response > threshold) {
 	            //std::cout << max_header_response << ", " << sample_counter << ", " << start << std::endl;
@@ -788,7 +793,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	            		pos<=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))+((unit_offset*correct_offset)*unit_time*16*16+2*jitter))){
 
 	            			//data_energy_0[i] = current * current + data_energy_0[i];
-					if(data_energy_0[i] < current){
+					if(data_energy_0[i] < current * current){
 	            				data_energy_0[i] = current * current;
 					}
 					//if(i == 0) {
@@ -803,7 +808,7 @@ int nearfield_demod_impl::work(int noutput_items,
 				//if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))-(2*jitter))&&
 	            		    pos<=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))+((unit_offset*correct_offset)*unit_time*16*16+2*jitter))){
 	            			//data_energy_1[i] = current * current + data_energy_1[i];
-					if(data_energy_1[i] < current){
+					if(data_energy_1[i] < current * current){
 	            				data_energy_1[i] = current * current;
 					}
 					//if(i == 0) {
