@@ -17,8 +17,12 @@ import sys
 
 # Used for pushing information to the cloud data service:
 import json, urllib2
+<<<<<<< HEAD
 GATD_HOST = 'localhost'
 #GATD_HOST = 'inductor.eecs.umich.edu'
+=======
+GATD_HOST = 'gatd.eecs.umich.edu'
+>>>>>>> ab2bb7d44cbda6ee10bbae22685b0bf7e71be580
 GATD_PORT = '4001'
 GATD_PROFILE_ID = 'N9NaoNAJzi'
 
