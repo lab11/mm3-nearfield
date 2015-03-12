@@ -17,7 +17,8 @@ import sys
 
 # Used for pushing information to the cloud data service:
 import json, urllib2
-GATD_HOST = 'inductor.eecs.umich.edu'
+GATD_HOST = 'localhost'
+#GATD_HOST = 'inductor.eecs.umich.edu'
 GATD_PORT = '4001'
 GATD_PROFILE_ID = 'N9NaoNAJzi'
 
@@ -278,16 +279,16 @@ def main():
 
         parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2",
                           help="UHD device address args [default=%default]")
-	parser.add_option("-f", "--freq", type="float", default=899.4e6, help="USRP carrier frequency [default=%default]")
+	parser.add_option("-f", "--freq", type="float", default=905e6, help="USRP carrier frequency [default=%default]")
 	parser.add_option("-g", "--gain", type="float", default=70, help="USRP gain [default=%default]")
-	parser.add_option("-b", "--bitrate", type="float", default=127, help="RX Bitrate [default=%default]")
-	parser.add_option("-B", "--bitrate-accuracy", type="float", default=10, help="RX Bitrate Accuracy (%) [default=%default]")
+	parser.add_option("-b", "--bitrate", type="float", default=220, help="RX Bitrate [default=%default]")
+	parser.add_option("-B", "--bitrate-accuracy", type="float", default=20, help="RX Bitrate Accuracy (%) [default=%default]")
 	parser.add_option("", "--post-bitrate-accuracy", type="float", default=10, help="Post-sync RX Bitrate Accuracy (%) [default=%default]")
-	parser.add_option("-p", "--pulse-len", type="float", default=400e-9, help="Pulse Length [default=%default]")
-	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=25, help="Pulse Length Accuracy (%)")
-	parser.add_option("", "--post-pulse-len-accuracy", type="float", default=25, help="Post-sync Pulse Length Accuracy (%)")
-	parser.add_option("-h", "--header-len", type="int", default=3, help="Header Length (bits)")
-	parser.add_option("-n", "--packet-len", type="int", default=29, help="Packet Length (bits")
+	parser.add_option("-p", "--pulse-len", type="float", default=320e-9, help="Pulse Length [default=%default]")
+	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=20, help="Pulse Length Accuracy (%)")
+	parser.add_option("", "--post-pulse-len-accuracy", type="float", default=15, help="Post-sync Pulse Length Accuracy (%)")
+	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
+	parser.add_option("-n", "--packet-len", type="int", default=28, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
 	parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
 	parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")
