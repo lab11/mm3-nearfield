@@ -16,8 +16,8 @@ import wx
 import nearfield
 import time
 
-GATD_HOST = 'gatd.eecs.umich.edu'
-#GATD_HOST = 'localhost'
+#GATD_HOST = 'inductor.eecs.umich.edu'
+GATD_HOST = 'localhost'
 GATD_PORT = '4001'
 GATD_PROFILE_ID = 'N9NaoNAJzi'
 
