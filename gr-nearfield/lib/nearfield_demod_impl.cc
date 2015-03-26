@@ -53,7 +53,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	  d_log_file("nearfield_log.txt"), d_gatd_id(gatd_id) {
 
 	// variables
-	threshold = 0.5;            // threshold set after observing data
+	threshold = 0.6;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -399,13 +399,19 @@ int nearfield_demod_impl::work(int noutput_items,
 				//std::cout << "pulse too short, recognized as zero" << std::endl;
 				sync_pulse = 0;              // reset
 			}
-			if(valid_pulse == 1) {              // we found a pulse
+			if(valid_pulse == 1) {
+		                // we found a pulse
+
+				std::cout << "1: " << std::endl;
 				demod_data.push_back(1);
 				n = n + 1;
 				sync_prf = sav_pulse;        // prf is defined as rising edge of pulse to the next rising edge of pulse
+				std::cout << "sync_prf: " << sav_pulse << std::endl;
 				sync_prf2 = 0;
 				valid_pulse = 0;             // reset
 			} else if(sync_prf2 == prf_window) {   // ran through whole prf window w/o finding pulse
+
+				std::cout << "0: " << std::endl;
 				demod_data.push_back(0);
 				n = n + 1;
 				sync_prf = prf_length_max - prf_length;      // don't set to 0...reset to middle of window for timing

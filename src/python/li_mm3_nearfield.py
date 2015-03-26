@@ -209,9 +209,9 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.connect(self.source, self.mag, self.tm_framer)
 	#self.connect(self.source, self.chan_filt, self.mag, self.tm_framer)
 	if options.record == True:
-		self.file_sink0 = blocks.file_sink(gr.sizeof_float, "iq_recording_ppm_20mm_1.dat")
+		self.file_sink0 = blocks.file_sink(gr.sizeof_gr_complex, "my_iq_recording.dat")
 		#self.file_sink1 = blocks.file_sink(gr.sizeof_gr_complex, "my_iq_recording_before_channel_filter.dat")
-		self.connect(self.mag, self.file_sink0)
+		self.connect(self.source, self.file_sink0)
 		#self.connect(self.source, self.file_sink1)
 
 
