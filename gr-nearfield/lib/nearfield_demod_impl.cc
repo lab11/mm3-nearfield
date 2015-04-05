@@ -430,14 +430,23 @@ int nearfield_demod_impl::work(int noutput_items,
                         double seconds = difftime(current_time, last_time);
                         last_time = current_time;
 			char* dt = std::ctime(&current_time);
-			std::cout << "SENDING MESSAGE" << std::endl;
-			std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
-			d_log_file << "SENDING MESSAGE" << std::endl;
+            if(demod_data[0] == 0 && demod_data[1] == 0 && demod_data[2] == 0 && demod_data[3] == 0){
+			    d_log_file << "SENDING TIME MESSAGE" << std::endl;
 		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
-			for(int ii=0; ii < demod_data.size(); ii++){
-				std::cout << (int)(demod_data[ii]) << ", ";
-				d_log_file << (int)(demod_data[ii]) << ", ";
-			}
+			    for(int ii=4; ii < demod_data.size(); ii++){
+				    std::cout << (int)(demod_data[ii]) << ", ";
+				    d_log_file << (int)(demod_data[ii]) << ", ";
+			    }
+            } else if(demod_data[0] == 1 && demod_data[1] == 1 && demod_data[2] == 1 && demod_data[3] == 1){
+			    d_log_file << "SENDING DATA MESSAGE" << std::endl;
+		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+			    for(int ii=4; ii < demod_data.size(); ii++){
+				    std::cout << (int)(demod_data[ii]) << ", ";
+				    d_log_file << (int)(demod_data[ii]) << ", ";
+			    }
+            } else {
+                //nothing
+            }
 			d_log_file << std::endl;
 			std::cout << std::endl;
 
