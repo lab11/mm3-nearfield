@@ -78,6 +78,7 @@ namespace gr {
     int last_offset;    
     int correct_offset;    
     long int sample_counter;
+	std::queue<float> lastpulses;
 	float threshold_sync;
     float unit_time;
     int time_offset;
@@ -85,7 +86,6 @@ namespace gr {
 	//std::deque<float> matched_pulses;
 	std::deque<float> data_queue[100];
 	float energy;
-	float past;
 	float all_pulse_energy[40];
 	int sample_ctr;
 	std::vector<float> pulse_vec;
@@ -120,6 +120,7 @@ namespace gr {
 	float data_energy_0[100];
 	float data_energy_1[100];
     float reset_data;
+	int delay;
     float peak_distance;
     float long_matched_out[40];
 	float data_energy_out;
