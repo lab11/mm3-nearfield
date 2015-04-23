@@ -431,21 +431,34 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_time = current_time;
 			char* dt = std::ctime(&current_time);
             if(demod_data[0] == 0 && demod_data[1] == 0 && demod_data[2] == 0 && demod_data[3] == 0){
-			    d_log_file << "SENDING TIME MESSAGE" << std::endl;
+			    d_log_file << "TIME MESSAGE" << std::endl;
+                std::cout << "TIME MESSAGE" << std::endl;
 		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+                std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
 			    for(int ii=4; ii < demod_data.size(); ii++){
 				    std::cout << (int)(demod_data[ii]) << ", ";
 				    d_log_file << (int)(demod_data[ii]) << ", ";
 			    }
             } else if(demod_data[0] == 1 && demod_data[1] == 1 && demod_data[2] == 1 && demod_data[3] == 1){
-			    d_log_file << "SENDING DATA MESSAGE" << std::endl;
+			    d_log_file << "DATA MESSAGE" << std::endl;
+                std::cout << "DATA MESSAGE" << std::endl;
 		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+                std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
 			    for(int ii=4; ii < demod_data.size(); ii++){
 				    std::cout << (int)(demod_data[ii]) << ", ";
 				    d_log_file << (int)(demod_data[ii]) << ", ";
 			    }
             } else {
                 //nothing
+                d_log_file << "WRONG MESSAGE" << std::endl;
+                std::cout << "WRONG MESSAGE" << std::endl;
+		        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+                std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << (1/last_prf) << std::endl;
+			    for(int ii=0; ii < demod_data.size(); ii++){
+				    std::cout << (int)(demod_data[ii]) << ", ";
+				    d_log_file << (int)(demod_data[ii]) << ", ";
+                }
+
             }
 			d_log_file << std::endl;
 			std::cout << std::endl;
