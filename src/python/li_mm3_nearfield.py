@@ -16,8 +16,8 @@ import wx
 import nearfield
 import time
 
-GATD_HOST = 'inductor.eecs.umich.edu'
-#GATD_HOST = 'localhost'
+#GATD_HOST = 'inductor.eecs.umich.edu'
+GATD_HOST = 'localhost'
 GATD_PORT = '4001'
 GATD_PROFILE_ID = 'N9NaoNAJzi'
 
@@ -169,7 +169,11 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.nb0.GetPage(0).Add(self.threshold_text)
 
 	if options.playback == True:
+<<<<<<< .merge_file_ZHfXAc
 		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "my_iq_recording.dat", True)
+=======
+		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "s_4_h_8_d_8_c_30.dat", True)
+>>>>>>> .merge_file_tEvP2c
 		self.source = blocks.throttle(gr.sizeof_gr_complex,self._sample_rate)
 		self.connect(self.source2, self.source)
 	else:
@@ -209,9 +213,9 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.connect(self.source, self.mag, self.tm_framer)
 	#self.connect(self.source, self.chan_filt, self.mag, self.tm_framer)
 	if options.record == True:
-		self.file_sink0 = blocks.file_sink(gr.sizeof_float, "iq_recording_ppm_10mm.dat")
+		self.file_sink0 = blocks.file_sink(gr.sizeof_gr_complex, "s_4_h_8_d_8_c_30_0.dat")
 		#self.file_sink1 = blocks.file_sink(gr.sizeof_gr_complex, "my_iq_recording_before_channel_filter.dat")
-		self.connect(self.mag, self.file_sink0)
+		self.connect(self.source, self.file_sink0)
 		#self.connect(self.source, self.file_sink1)
 
 
@@ -304,9 +308,15 @@ def main():
 
         parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2",
                           help="UHD device address args [default=%default]")
+<<<<<<< .merge_file_ZHfXAc
 	parser.add_option("-f", "--freq", type="float", default=900e6, help="USRP carrier frequency [default=%default]")
 	parser.add_option("-g", "--gain", type="float", default=62, help="USRP gain [default=%default]")
 	parser.add_option("-b", "--bitrate", type="float", default=300, help="RX Bitrate [default=%default]")
+=======
+	parser.add_option("-f", "--freq", type="float", default=890e6, help="USRP carrier frequency [default=%default]")
+	parser.add_option("-g", "--gain", type="float", default=62, help="USRP gain [default=%default]")
+	parser.add_option("-b", "--bitrate", type="float", default=290, help="RX Bitrate [default=%default]")
+>>>>>>> .merge_file_tEvP2c
 	#12nope -- 267
         #40nope -- 125
         parser.add_option("-B", "--bitrate-accuracy", type="float", default=15, help="RX Bitrate Accuracy (%) [default=%default]")
@@ -315,7 +325,7 @@ def main():
 	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=10, help="Pulse Length Accuracy (%)")
 	parser.add_option("", "--post-pulse-len-accuracy", type="float", default=10, help="Post-sync Pulse Length Accuracy (%)")
 	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
-	parser.add_option("-n", "--packet-len", type="int", default=12, help="Packet Length (bits")
+	parser.add_option("-n", "--packet-len", type="int", default=22, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
 	parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
 	parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")

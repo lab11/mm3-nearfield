@@ -86,5 +86,7 @@ function v = gr_read_complex_binary (filename, count)
     [r, c] = size (v);
 	
     v = reshape (v, c, r);
+    
+    %v = abs(v);
 	
   end

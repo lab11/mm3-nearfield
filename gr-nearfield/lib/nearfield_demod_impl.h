@@ -103,6 +103,7 @@ namespace gr {
 	int scores[40];
 	int sub_sample_counter;
     int distance_table[16];
+    int seed_table[16];
 	int window_length[40];
     int sum_table[16];
     std::deque<float> matched_pulses;

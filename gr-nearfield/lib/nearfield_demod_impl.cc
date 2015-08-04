@@ -112,13 +112,15 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	max_header_response = 0;
 	last_peak_response = 0;
 	process_counter = 0;
-    unit_time = 103000.0/(16 * subsample_rate);
+    //unit_time = 103000.0/(16 * subsample_rate);
+    data_distance = 30350;
+    header_data_distance = 29000;
     //std::cout << unit_time << std::endl;
     time_offset = 0;
 	pos = 0;
     reset_data = 0;
     peak_distance = 0;
-    jitter = unit_time * 16 * 0.02;
+    jitter = data_distance * 0.01;
 	delay = 0;
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
@@ -140,12 +142,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
 		//std::cout << "size of buffer[" << k << "] = " << (345 * unit_time * (1+unit_offset*k) + 2 * jitter + 345 * unit_offset * unit_time) << std::endl; 
  		if(k == num_rake_filter - 1){
-            for(int j = 0; j < (345 * unit_time * (1+unit_offset*k) + 2 * jitter + 345 * unit_offset * unit_time); j++){
+            for(int j = 0; j < (sum_table[15] * (1+unit_offset*k) + 2 * jitter + sum_table[15] * unit_offset); j++){
 			    matched_pulses.push_front(0);
             }
         }
-        rake_offset[k] = (345 * unit_time * (1+unit_offset*39) + 2 * jitter + 345 * unit_offset * unit_time) -
-                            (345 * unit_time * (1+unit_offset*k) + 2 * jitter + 345 * unit_offset * unit_time);
+        rake_offset[k] = (345 * unit_time * (1+unit_offset*39) + 2 * jitter + sum_table[15] * unit_offset) -
+                            (345 * unit_time * (1+unit_offset*k) + 2 * jitter + sum_table[15] * unit_offset);
 
 
 		all_pulse_energy[k] = 0;
@@ -170,41 +172,46 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	}
 
     data_energy_out = 0;
-        //init tables
-        distance_table[0] = 0;
-        distance_table[1] = 23;
-        distance_table[2] = 16;
-        distance_table[3] = 20;
-        distance_table[4] = 25;
-        distance_table[5] = 29;
-        distance_table[6] = 27;
-        distance_table[7] = 24;
-        distance_table[8] = 22;
-        distance_table[9] = 28;
-        distance_table[10] = 17;
-        distance_table[11] = 21;
-        distance_table[12] = 30;
-        distance_table[13] = 18;
-        distance_table[14] = 26;
-        distance_table[15] = 19;
-       
-        last_offset = 0;
+    //init tables
+    seed_table[0] = 0;
+    seed_table[1] = 16;
+    seed_table[2] = 32;
+    seed_table[3] = 3;
+    seed_table[4] = 6;
+    seed_table[5] = 12;
+    seed_table[6] = 24;
+    seed_table[7] = 48;
+    seed_table[8] = 35;
+    seed_table[9] = 5;
+    seed_table[10] = 10;
+    seed_table[11] = 20;
+    seed_table[12] = 40;
+    seed_table[13] = 19;
+    seed_table[14] = 38;
+    seed_table[15] = 15;
+   
+    last_offset = 0;
 	correct_offset = 0;
 	start = 0;
     last_max_response = 0;
-        sum_table[0] = 0;
-        for(int i = 1; i < 16; i++){
-            sum_table[i] = sum_table[i-1] + distance_table[i];
-		//std::cout << sum_table[i] << std::endl;
-        }
+    for(int i = 1; i < 16; i++){
+        distance_table[i] = seed_table[i] * A + B;
+    //std::cout << sum_table[i] << std::endl;
+    }
+
+    sum_table[0] = 0;
+    for(int i = 1; i < 16; i++){
+        sum_table[i] = sum_table[i-1] + distance_table[i];
+    //std::cout << sum_table[i] << std::endl;
+    }
     //std::cout << N << std::endl;
 	for(int i = 0; i< num_rake_filter; i++){
 		for(int j = 0; j < 16; j++) {
 			if(j == 0) {
 				window_length[i] = 2*jitter + 1;
 			} else {
-				window_length[i] += int((1+unit_offset*i) * unit_time * sum_table[j] + (2 * jitter - 1) + 
-						unit_offset * unit_time * sum_table[j]) - int((1+unit_offset*i) * unit_time * sum_table[j]);
+				window_length[i] += int((1+unit_offset*i) * sum_table[j] + (2 * jitter - 1) + 
+						unit_offset * sum_table[j]) - int((1+unit_offset*i) * sum_table[j]);
 			}
 		}
 	}
@@ -397,8 +404,9 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
                     */
 
                     float max_pulse = 0;     
-                    for(int loc = rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k]); loc <= rake_offset[i]+int((1+unit_offset*i) * unit_time * sum_table[k] + (2 * jitter - 1) + 
-                            unit_offset * unit_time * sum_table[k]); loc++){
+                    for(int loc = rake_offset[i]+int((1+unit_offset*i) * sum_table[k]); 
+                            loc <= rake_offset[i]+int((1+unit_offset*i) * sum_table[k] + (2 * jitter - 1) + unit_offset * sum_table[k]);
+                            loc++){
                         if(matched_pulses[loc] > max_pulse) {
                             max_pulse = matched_pulses[loc];
                         }
@@ -533,6 +541,32 @@ int nearfield_demod_impl::work(int noutput_items,
 		} else { 
 			matched = d_fir->filter(&in[nn])/sqrt(energy);
 		}
+		//lastsamples[7] = in[nn];
+		//std::cout << "in: " << in[nn-filt_count] << std::endl;	
+		//float energy_template = 4.5211;
+		//float energy_template = 0.00017858 + 0.00096827 + 0.011 + 0.0827 + 0.64595 + 2.27846 + 2.019532 + 0.12233;
+		//float energy_template = 5.1611885;
+		//current = (in[nn] * 0.5914 + in[nn-1] * 1.1921 + in[nn-2] * 1.2286 + 
+		//in[nn-3] * 0.8965 + in[nn-4] * 0.5363 + in[nn-5] * 0.324 + 
+		//in[nn-6] * 0.1764 + in[nn-7] * 0.1156)/sqrt(energy*4.5211);
+		//std::cout << "energy: " << energy << std::endl;
+		//std::cout << "current: " << current << std::endl;	
+		//current = (in[nn] * 0.1156 + in[nn-1] * 0.1764 + in[nn-2] * 0.324 + 
+		//	in[nn-3] * 0.5363 + in[nn-4] * 0.8965 + in[nn-5] * 1.2286 + 
+		//	in[nn-6] * 1.1921 + in[nn-7] * 0.5914)/sqrt(energy*4.5211);
+		
+		//current = (in[nn] * 0.01336336 + in[nn-1] * 0.03111696 + in[nn-2] * 0.104976 + 
+		//	in[nn-3] * 0.28761769 + in[nn-4] * 0.80371225 + in[nn-5] * 1.50945796 + 
+		//	in[nn-6] * 1.42110241 + in[nn-7] * 0.34975396)/sqrt(energy * energy_template);
+		
+		//current = (lastsamples[0] * 0.01336336 + lastsamples[1] * 0.03111696 + lastsamples[2] * 0.104976 + 
+		//	lastsamples[3] * 0.28761769 + lastsamples[4] * 0.80371225 + lastsamples[5] * 1.50945796 + 
+		//	lastsamples[6] * 1.42110241 + lastsamples[7] * 0.34975396)/sqrt(energy * energy_template);
+	
+		//current = (lastsamples[0] * 0.1156 + lastsamples[1] * 0.1764 + lastsamples[2] * 0.324 + 
+		//	lastsamples[3] * 0.5363 + lastsamples[4] * 0.8965 + lastsamples[5] * 1.2286 + 
+		//	lastsamples[6] * 1.1921 + lastsamples[7] * 0.5914)/sqrt(energy*4.5211);
+        	//current = in[nn];
 			
 		//std::cout << matched << std::endl;
 		
@@ -689,7 +723,7 @@ int nearfield_demod_impl::work(int noutput_items,
 	 
             if(start == 1) {
 				//std::cout << std::endl;
-	    //		std::cout << max_header_response << ";" << sample_counter << std::endl;
+	            //std::cout << max_header_response << ";" << sample_counter << std::endl;
             }
 
 		
@@ -777,7 +811,8 @@ int nearfield_demod_impl::work(int noutput_items,
                 
                 //std::cout << current << std::endl;
 		        //std::cout << "finding data" << std::endl;
-	            if(pos <= ( ((1+unit_offset*correct_offset) * unit_time * 16.24 * (N + 0.4)) + ((unit_offset*(correct_offset))*unit_time*16.4*16+4*jitter) )){
+	            if(pos <= ( ((1+unit_offset*correct_offset) * unit_time * 16.24 * (N + 0.4)) + 
+                    ((unit_offset*(correct_offset))*unit_time*16.4*16+4*jitter) )){
 	            	for(int i = 0; i < N; i++){
                         //std::cout << "last_offset: " << last_offset << ", unit_offset: " << unit_offset << std::endl;
                         //std::cout << "offset: " << unit_offset * last_offset << std::endl;
@@ -789,14 +824,16 @@ int nearfield_demod_impl::work(int noutput_items,
                         //std::cout << "1_down: " << int(((1+unit_offset*last_offset)*unit_time*16*(i+1.4))-((unit_offset*last_offset)*unit_time*16*16)-2*jitter) << std::endl;
 
                         //std::cout << "1_up: " << int(((1+unit_offset*last_offset)*unit_time*16*(i+1.4))+((unit_offset*last_offset)*unit_time*16*16)+2*jitter) << std::endl;
-	            		if(pos>=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1) + delay)-((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))&&
+	            		if(pos>=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1) + delay)-
+                            ((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))&&
 	            		//if(pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))-(2*jitter))&&
-	            		pos<=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1) + delay)+((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))){
+	            		    pos<=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1) + delay)+
+                            ((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))){
 
 	            			//data_energy_0[i] = current * current + data_energy_0[i];
-					if(data_energy_0[i] < current * current){
+					        if(data_energy_0[i] < current * current){
 	            				data_energy_0[i] = current * current;
-					}
+					        }
 					//if(i == 0) {
 						//std::cout << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))-((unit_offset*correct_offset)*unit_time*16*16)-2*jitter) << ", end: " << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1))+((unit_offset*correct_offset)*unit_time*16*16)+2*jitter) << std::endl;
 						//std::cout << "data energy increase: " << data_energy_0[i] << ", " << current * current << ", pos: " << pos << std::endl;
@@ -805,20 +842,21 @@ int nearfield_demod_impl::work(int noutput_items,
                             //data_queue[i].push_back(current);
                             //std::cout << current << std::endl;
 	            		}
-				if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1.4) + delay)-((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))&&
+				        if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1.4) + delay)-
+                            ((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter)) &&
 				//if (pos>=int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.4))-(2*jitter))&&
-	            		    pos<=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1.4) + delay)+((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))){
+	            	        pos<=int(((1+unit_offset*correct_offset)*unit_time*16.24*(i+1.4) + delay)+
+                            ((unit_offset*correct_offset)*unit_time*16.24*16+4*jitter))){
 	            			//data_energy_1[i] = current * current + data_energy_1[i];
-					if(data_energy_1[i] < current * current){
-	            				data_energy_1[i] = current * current;
-					}
+					        if(data_energy_1[i] < current * current) {
+	            		        data_energy_1[i] = current * current;
+					        }
 					//if(i == 0) {
 						//std::cout << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.5))-((unit_offset*correct_offset)*unit_time*16*16)-2*jitter) << ", end: " << int(((1+unit_offset*correct_offset)*unit_time*16*(i+1.5))+((unit_offset*correct_offset)*unit_time*16*16)+2*jitter) << std::endl;
 						//std::cout << "data energy increase: " << data_energy_1[i] << ", " << current * current << ", pos: " << pos << std::endl;
 					//}
-                        	}
+                        }
 	            	}
-
 	            	pos++;
 	            }
 	            else {
@@ -896,7 +934,7 @@ int nearfield_demod_impl::work(int noutput_items,
                 reset_data = 0;
                 peak_distance = 0;
                 last_offset = 0;
-		correct_offset = 0;
+		        correct_offset = 0;
                 pos = 0;
 				for(int i = 0; i < N; i++){
 	            	data_energy_0[i] = 0; 
