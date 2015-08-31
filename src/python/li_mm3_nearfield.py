@@ -169,7 +169,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.nb0.GetPage(0).Add(self.threshold_text)
 
 	if options.playback == True:
-		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "my_iq_recording.dat", True)
+		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "ppm_recording.dat", True)
 		self.source = blocks.throttle(gr.sizeof_gr_complex,self._sample_rate)
 		self.connect(self.source2, self.source)
 	else:
@@ -209,7 +209,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.connect(self.source, self.mag, self.tm_framer)
 	#self.connect(self.source, self.chan_filt, self.mag, self.tm_framer)
 	if options.record == True:
-		self.file_sink0 = blocks.file_sink(gr.sizeof_gr_complex, "my_iq_recording.dat")
+		self.file_sink0 = blocks.file_sink(gr.sizeof_gr_complex, "my_iq_recording_new.dat")
 		#self.file_sink1 = blocks.file_sink(gr.sizeof_gr_complex, "my_iq_recording_before_channel_filter.dat")
 		self.connect(self.source, self.file_sink0)
 		#self.connect(self.source, self.file_sink1)
