@@ -87,6 +87,10 @@ function v = gr_read_complex_binary (filename, count)
 	
     v = reshape (v, c, r);
     
+<<<<<<< HEAD
     v = abs(v);
+=======
+    %v = abs(v);
+>>>>>>> d2013df97f79ae85429e9932b1b848a7237b5d84
 	
   end
