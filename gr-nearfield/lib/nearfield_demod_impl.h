@@ -76,7 +76,7 @@ namespace gr {
 	float last_pulse;
 	float max_sample;
     int last_offset;    
-    int correct_offset;    
+    float correct_offset;    
     long int sample_counter;
 	std::queue<float> lastpulses;
 	float threshold_sync;

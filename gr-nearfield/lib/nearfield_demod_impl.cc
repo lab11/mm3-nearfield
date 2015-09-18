@@ -112,35 +112,44 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	max_header_response = 0;
 	last_peak_response = 0;
 	process_counter = 0;
-    //unit_time = 103000.0/(16 * subsample_rate);
-    data_distance = 24300/subsample_rate;
-    //data_distance = 30360/subsample_rate;
-    header_data_distance = 20500/subsample_rate;
-    //header_data_distance = 26000/subsample_rate;
-    one_zero_rate = 0.185;
-    //one_zero_rate = 0.185;
-    //A = 1381.3/float(subsample_rate);
-    A = 1106.0/float(subsample_rate);
-    //B = 19311/float(subsample_rate);
-    B = 15418/float(subsample_rate);
-    //std::cout << unit_time << std::endl;
     time_offset = 0;
     data_acquired = 0;
 	pos = 0;
     target_one_pos = 0;
     target_zero_pos = 0;
-    dis_one_to_zero = 18500.0/subsample_rate;
-    dis_one_to_one = 23166.0/subsample_rate;
-    dis_zero_to_zero = 24300.0/subsample_rate;
-    dis_zero_to_one = 29000.0/subsample_rate;
+    //unit_time = 103000.0/(16 * subsample_rate);
+    //tuning params
+    data_distance = 12033.0/(subsample_rate * 1.003);
+    header_data_distance = 11488.0/(subsample_rate * 1.003);
+    one_zero_rate = 0.185;
+    A = 546.6/float(subsample_rate * 1.003);
+    B = 7669.5/float(subsample_rate * 1.003);
+    dis_one_to_zero = 9300.0/(subsample_rate * 1.003);
+    dis_one_to_one = 11488.0/(subsample_rate * 1.003);
+    dis_zero_to_zero = 12033.0/(subsample_rate * 1.003);
+    dis_zero_to_one = 14200.0/(subsample_rate * 1.003);
+    ////data_distance = 24300/subsample_rate;
+    ////header_data_distance = 20500/subsample_rate;
+    ////one_zero_rate = 0.185;
+    ////A = 1106.0/float(subsample_rate);
+    ////B = 15418/float(subsample_rate);
+    ////dis_one_to_zero = 18500.0/subsample_rate;
+    ////dis_one_to_one = 23166.0/subsample_rate;
+    ////dis_zero_to_zero = 24300.0/subsample_rate;
+    ////dis_zero_to_one = 29000.0/subsample_rate;
+    //one_zero_rate = 0.185;
+    //A = 1381.3/float(subsample_rate);
+    //B = 19311/float(subsample_rate);
+    //data_distance = 30360/subsample_rate;
+    //header_data_distance = 26000/subsample_rate;
     //dis_one_to_zero = (29500 * 0.797)/subsample_rate;
     //dis_one_to_one = 29500/subsample_rate;
     //dis_zero_to_zero = 24250/subsample_rate;
     //dis_zero_to_one = (24250 * (1 + one_zero_rate))/subsample_rate;
     reset_data = 0;
     peak_distance = 0;
-    jitter = data_distance * 0.01;
-    //jitter = 1;
+    //jitter = data_distance * 0.01;
+    jitter = 1.0;
 	delay = 0;
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
@@ -722,7 +731,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_offset = time_offset;
                     } else {
                         time_offset = last_offset;
-                        correct_offset = last_offset;
+                        correct_offset = last_offset + 0.5;
 
                        	std::cout << "find header, clock offset = " << time_offset << std::endl;
                         //std::cout << "response = " << last_max_response << std::endl;
@@ -731,8 +740,9 @@ int nearfield_demod_impl::work(int noutput_items,
 			            last_peak_response = last_max_response;
                         data_acquired = 0;
                         pos = 0;
-                        target_zero_pos = header_data_distance;
-                        target_one_pos = header_data_distance + dis_zero_to_zero * one_zero_rate/(1);
+                        target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 1500.0/subsample_rate;
+                        target_one_pos = (header_data_distance + dis_zero_to_zero * one_zero_rate/(1))*(1 + unit_offset * correct_offset)
+                                            - 1500.0/subsample_rate;
                         peak_distance = 0;
                         //std::cout << "2.5" << std::endl;
                         /*
@@ -749,7 +759,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         if(peak_distance < (100000/subsample_rate) && last_max_response > last_peak_response) {
                             //valid stronger peak!!!
                             time_offset = last_offset;
-                            correct_offset = last_offset;
+                            correct_offset = last_offset + 0.5;
 
                             std::cout << "find new header, clock offset = " << time_offset << std::endl;
                             //std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
@@ -758,8 +768,9 @@ int nearfield_demod_impl::work(int noutput_items,
 			                last_peak_response = last_max_response;
                             data_acquired = 0;
                             pos = 0;
-                            target_zero_pos = header_data_distance;
-                            target_one_pos = header_data_distance + dis_zero_to_zero * one_zero_rate/(1);
+                            target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 1500.0/subsample_rate;
+                            target_one_pos = (header_data_distance + dis_zero_to_zero*one_zero_rate/(1))*(1 + unit_offset*correct_offset)
+                                                - 1500.0/subsample_rate;
                             peak_distance = 0;
                             reset_data = 1;
                             //std::cout << "2.5" << std::endl;
@@ -791,50 +802,51 @@ int nearfield_demod_impl::work(int noutput_items,
 		            demod_data.clear();
                     data_acquired = 0;
                     pos = 0;
-                    target_zero_pos = header_data_distance;
-                    target_one_pos = header_data_distance + dis_zero_to_zero * one_zero_rate/(1);
+                    target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 1500.0/subsample_rate;
+                    target_one_pos = (header_data_distance + dis_zero_to_zero * one_zero_rate/(1)) * (1 + unit_offset * correct_offset)
+                                        - 1500.0/subsample_rate;
                 }    
  
                 //std::cout << current << std::endl;
 		        //std::cout << "finding data" << std::endl;
                 //std::cout << "pos: " << pos << "; n: " << n << "; data_acquired: " << data_acquired << std::endl;
                 if(pos >= (target_zero_pos -
-                    ((unit_offset * correct_offset) * (data_distance * 15 + header_data_distance) + 6 * jitter)) &&
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 6 * jitter)) && // window
                     pos <= (target_zero_pos +
-                    ((unit_offset * correct_offset) * (data_distance * 15 + header_data_distance) + 6 * jitter))){
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 2.49 * jitter))){  //window
 
                     //data_energy_0[i] = current * current + data_energy_0[i];
                     if(data_energy_0[n] < current * current){
                         data_energy_0[n] = current * current;
                     }
-                    //std::cout << "pos: " << pos << " zero[" << n << "]: " << current << std::endl;
+                   std::cout << "pos: " << pos << " zero[" << n << "]: " << current << std::endl;
 	            }
                 if (pos>=int(target_one_pos -
-                    ((unit_offset * correct_offset) * (data_distance * 15 + header_data_distance) + 6 * jitter)) &&
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 2.49 * jitter)) && //window
                     pos<=int(target_one_pos +
-                    ((unit_offset * correct_offset) * (data_distance * 15 + header_data_distance) + 6 * jitter))){
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 6 * jitter))){ //window
                     if(data_energy_1[n] < current * current) {
                         data_energy_1[n] = current * current;
                     }
                     if (pos == int(target_one_pos + 
-                                ((unit_offset * correct_offset) * (data_distance * 15 + header_data_distance) + 6 * jitter))){
+                                ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 6 * jitter))){ // window
                         data_acquired = 1;
                     }
-                    //std::cout << "pos: " << pos << " one[" << n << "]: " << current << std::endl;
+                    std::cout << "pos: " << pos << " one[" << n << "]: " << current << std::endl;
                 }
 
                 //compare and get data
-                if((data_energy_0[n] > data_energy_1[n]) && data_acquired){
+                if((data_energy_0[n] >= data_energy_1[n]) && data_acquired){
                         demod_data.push_back(1);
                         n++;
-                        target_one_pos = dis_zero_to_one + target_zero_pos;
-                        target_zero_pos = dis_zero_to_zero + target_zero_pos;
+                        target_one_pos = (dis_zero_to_one * (1 + unit_offset * correct_offset))  + target_zero_pos;
+                        target_zero_pos = (dis_zero_to_zero * (1 + unit_offset * correct_offset)) + target_zero_pos;
                         data_acquired = 0;
                 } else if((data_energy_0[n] <= data_energy_1[n]) && data_acquired) {
                         demod_data.push_back(0);
                         n++;
-                        target_zero_pos = dis_one_to_zero + target_one_pos;
-                        target_one_pos = dis_one_to_one + target_one_pos;
+                        target_zero_pos = (dis_one_to_zero  * (1 + unit_offset * correct_offset)) + target_one_pos;
+                        target_one_pos = (dis_one_to_one  * (1 + unit_offset * correct_offset)) + target_one_pos;
                         data_acquired = 0;
                 }
                 pos++;
