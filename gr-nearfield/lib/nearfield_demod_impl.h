@@ -139,6 +139,7 @@ namespace gr {
     int num_rake_filter;
     //std::deque<float> matched_pulses;
     float unit_offset;
+    float factor;
     float max_offset;
     float rake_offset[40];
     int process_counter;
@@ -153,6 +154,8 @@ namespace gr {
     pthread_t threads_6;
     pthread_t threads_7;
 
+
+
     pthread_mutex_t locks_0;
     pthread_mutex_t locks_1;
     pthread_mutex_t locks_2;
@@ -162,6 +165,8 @@ namespace gr {
     pthread_mutex_t locks_5;
     pthread_mutex_t locks_6;
     pthread_mutex_t locks_7;
+
+
 
     pthread_mutex_t shared_lock;
     pthread_cond_t shared_cond;
@@ -175,7 +180,6 @@ namespace gr {
     object Objs_5;
     object Objs_6;
     object Objs_7;
-
 
      public:
       nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
