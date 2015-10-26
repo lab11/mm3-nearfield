@@ -46,7 +46,7 @@ namespace gr {
        * class. nearfield::nearfield_demod::make is the public interface for
        * creating new instances.
        */
-      static sptr make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
+      static sptr make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, float bb_freq, const std::string gatd_id);
 
       virtual float getLastObservedBitrate() = 0;
       virtual float getLastObservedPulseLen() = 0;
@@ -60,6 +60,7 @@ namespace gr {
       virtual void setSampleRate(float sample_rate_in) = 0;
       virtual void setPacketLen(int packet_len_in) = 0;
       virtual void setHeaderLen(int header_len_in) = 0;
+      virtual void setbbfreq(float bb_freq_in) = 0;
     };
 
   } // namespace nearfield

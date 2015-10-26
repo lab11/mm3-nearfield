@@ -1,0 +1,5 @@
+To calibrate radio to a chip
+1. python ppm_header_cali.py --record //make sure you get a packet(16 header 16 data, put anntenna close to the chip)
+2. bash run_cali
+3. put the offset value at line 336 of ppm_header_cali.py
+4. run "python ppm_header_cali.py" to use radio

@@ -48,15 +48,15 @@ float mean(std::vector<float> in_vec){
 	return m;
 }
 
-nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id) {
+nearfield_demod::sptr nearfield_demod::make(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, float bb_freq, const std::string gatd_id) {
 		return gnuradio::get_initial_sptr
-			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, post_bitrate_accuracy, pulse_len, pulse_len_accuracy, post_pulse_len_accuracy, packet_len, header_len, gatd_id));
+			(new nearfield_demod_impl(sample_rate, bitrate, bitrate_accuracy, post_bitrate_accuracy, pulse_len, pulse_len_accuracy, post_pulse_len_accuracy, packet_len, header_len, bb_freq, gatd_id));
 	}
 
 /*
  * The private constructor
  */
-nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id)
+nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, float bb_freq, const std::string gatd_id)
 	: gr::sync_block("nearfield_demod",
 			gr::io_signature::make(1, 1, sizeof(float)),
 			gr::io_signature::make(0, 1, sizeof(float))),
@@ -81,6 +81,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	setPostBitrateAccuracy(post_bitrate_accuracy);
 	setPacketLen(packet_len);
 	setHeaderLen(header_len);
+
 
 	sample_ctr = 0;
 	last_prf = 0.0;
@@ -117,6 +118,8 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	pos = 0;
     target_one_pos = 0;
     target_zero_pos = 0;
+
+
     //unit_time = 103000.0/(16 * subsample_rate);
     //tuning params
     //v7
@@ -130,44 +133,6 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     //dis_zero_to_zero = 12033.0/(subsample_rate * 1.003);
     //dis_zero_to_one = 14200.0/(subsample_rate * 1.003);
 
-    unit_offset = 0.0015;
-    factor = 1 + unit_offset * 31.5;//26.5
-    //v8 fast
-    /*
-    data_distance = 11925.75/(subsample_rate * 1.003);
-    header_data_distance = 11456.0/(subsample_rate * 1.003);
-    one_zero_rate = 0.185;
-    A = 542.4/float(subsample_rate * 1.003);
-    B = 7589.7/float(subsample_rate * 1.003);
-    dis_one_to_zero = 9223.75/(subsample_rate * 1.003);
-    dis_one_to_one = 11386.75/(subsample_rate * 1.003);
-    dis_zero_to_zero = 11925.875/(subsample_rate * 1.003);
-    dis_zero_to_one = 14087.71/(subsample_rate * 1.003);
-    
-    //v8 fast
-    data_distance = 11925.75 /(subsample_rate * factor);
-    header_data_distance = 11456.0 /(subsample_rate * factor);
-    one_zero_rate = 0.185;
-    A = 542.4 /float(subsample_rate * factor);
-    B = 7589.7 /float(subsample_rate * factor);
-    dis_one_to_zero = 9223.75 /(subsample_rate * factor);
-    dis_one_to_one = 11386.75 /(subsample_rate * factor);
-    dis_zero_to_zero = 11925.875 /(subsample_rate * factor);
-    dis_zero_to_one = 14087.71 /(subsample_rate * factor);
-    */
-
-    
-    //v8 slow
-    data_distance = 11925.75 * 2/(subsample_rate * factor);
-    header_data_distance = 11456.0 * 2/(subsample_rate * factor);
-    one_zero_rate = 0.185;
-    A = 542.4 * 2/float(subsample_rate * factor);
-    B = 7589.7 * 2/float(subsample_rate * factor);
-    dis_one_to_zero = 9223.75 * 2/(subsample_rate * factor);
-    dis_one_to_one = 11386.75 * 2/(subsample_rate * factor);
-    dis_zero_to_zero = 11925.875 * 2/(subsample_rate * factor);
-    dis_zero_to_one = 14087.71 * 2/(subsample_rate * factor);
-    
 
 
     ////data_distance = 24300/subsample_rate;
@@ -228,7 +193,11 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     seed_table[15] = 15;
  
 
+	setbbfreq(bb_freq);
+
+    /*
     distance_table[0] = 0;
+
     std::cout << "distance table" << std::endl;
     for(int i = 1; i < 16; i++){
         distance_table[i] = seed_table[i] * A + B;
@@ -241,6 +210,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
         sum_table[i] = sum_table[i-1] + distance_table[i];
         std::cout << sum_table[i] << std::endl;
     }
+
 
 	for (int k = 0; k < num_rake_filter; k++){
 
@@ -258,30 +228,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 
 		//std::cout << "size of buffer[" << k << "] = " << matched_pulses[k].size() << std::endl; 
 	}
-	energy = 0;
-    for(int i = 0; i < num_rake_filter; i++){
-		long_matched_out[i] = 0;     
-        aggregated_header[i] = 0;
-	//scores[i] = 0;
-        last[i] = 0;
-	}
-        for(int i = 0; i < 100; i++){
-		data_energy_0[i] = 0; 
-		data_energy_1[i] = 0; 
-        /*
-        for(int j = 0; j < unit_time * 16 * 0.1; j++){
-            data_queue[i].push_front(0);
-        }
-        */
-	}
 
-    data_energy_out = 0;
-  
-    last_offset = 0;
-	correct_offset = 0;
-	start = 0;
-    last_max_response = 0;
+    */
     //std::cout << N << std::endl;
+    /*
 	for(int i = 0; i< num_rake_filter; i++){
 		for(int j = 0; j < 16; j++) {
 			if(j == 0) {
@@ -292,10 +242,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 			}
 		}
 	}
+    */
     //std::cout << "jitter: " << jitter << std::endl;
 
 
 
+    /*
     Objs_0.C = this;
     Objs_0.start_num =0;
     Objs_0.end_num =5;
@@ -375,7 +327,10 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     //std::cerr << "4" << std::endl;
 
 
+
+    */
 	message_port_register_out(pmt::mp("frame_out"));
+
 }
 
 void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int thread_num) {
@@ -525,6 +480,304 @@ void nearfield_demod_impl::setHeaderLen(int header_len_in){
 
 void nearfield_demod_impl::setPacketLen(int packet_len_in){
 	N = packet_len_in;
+}
+
+void nearfield_demod_impl::setbbfreq(float bb_freq_in){
+	sample_ctr = 0;
+	last_prf = 0.0;
+	last_pulse = 0.0;
+    sample_counter = 0;	
+	
+	// Treating this like it's streaming data so I won't use some of the 
+	// efficient Matlab functions that would speed this up.
+	last_pulse_length = 0;
+	last_pulse_distance = 0;
+	last_data = 0;      // previous received data point
+	pulse_count = 0;    // length of current pulse (1s)
+	prf_count = 0;      // length of current prf (0s)
+	sync = 0;           // current consecutive sync pulses
+	error = 0;
+	fuzz = 1;
+	last_prf_count = 0;
+	valid_count = 0;
+	sync_prf = 0;       // prf counter in sync part of loop
+	sync_prf2 = 0;      // prf counter in sync part of loop (prf_window)
+	sync_pulse = 0;     // pulse counter in sync part of loop
+	prf_win_cnt = 0;    // counter for window of pulses between prf_min and prf_max in sync routine
+	valid_pulse = 0;    // flag for pulse detection
+	n = 0;              // counter for N
+	max_sample = 0;
+    subsample_rate = 250.0;
+	
+	threshold_sync = 0.7;
+	max_header_response = 0;
+	last_peak_response = 0;
+	process_counter = 0;
+    time_offset = 0;
+    data_acquired = 0;
+	pos = 0;
+    target_one_pos = 0;
+    target_zero_pos = 0;
+
+
+    //unit_time = 103000.0/(16 * subsample_rate);
+    //tuning params
+    //v7
+    //data_distance = 12033.0/(subsample_rate * 1.003);
+    //header_data_distance = 11488.0/(subsample_rate * 1.003);
+    //one_zero_rate = 0.185;
+    //A = 546.6/float(subsample_rate * 1.003);
+    //B = 7669.5/float(subsample_rate * 1.003);
+    //dis_one_to_zero = 9300.0/(subsample_rate * 1.003);
+    //dis_one_to_one = 11488.0/(subsample_rate * 1.003);
+    //dis_zero_to_zero = 12033.0/(subsample_rate * 1.003);
+    //dis_zero_to_one = 14200.0/(subsample_rate * 1.003);
+
+
+
+    ////data_distance = 24300/subsample_rate;
+    ////header_data_distance = 20500/subsample_rate;
+    ////one_zero_rate = 0.185;
+    ////A = 1106.0/float(subsample_rate);
+    ////B = 15418/float(subsample_rate);
+    ////dis_one_to_zero = 18500.0/subsample_rate;
+    ////dis_one_to_one = 23166.0/subsample_rate;
+    ////dis_zero_to_zero = 24300.0/subsample_rate;
+    ////dis_zero_to_one = 29000.0/subsample_rate;
+    //one_zero_rate = 0.185;
+    //A = 1381.3/float(subsample_rate);
+    //B = 19311/float(subsample_rate);
+    //data_distance = 30360/subsample_rate;
+    //header_data_distance = 26000/subsample_rate;
+    //dis_one_to_zero = (29500 * 0.797)/subsample_rate;
+    //dis_one_to_one = 29500/subsample_rate;
+    //dis_zero_to_zero = 24250/subsample_rate;
+    //dis_zero_to_one = (24250 * (1 + one_zero_rate))/subsample_rate;
+    reset_data = 0;
+    peak_distance = 0;
+    //jitter = data_distance * 0.01;
+    jitter = 1.0;
+	delay = 0;
+    //jitter = 1.1;
+    //std::cout << jitter << std::endl;
+	//jitter = 1;
+    num_rake_filter = 40;
+
+	sub_sample_counter = 0;	
+	max_current = 0;
+	avg_current = 0;
+	last_time = time(0);
+	pulse_vec.clear();
+	prf_vec.clear();
+	demod_data.clear();
+	noise_power = 0;
+    for (int k = 0; k < 100; k++ ) {
+        lastpulses.push(0);
+	}
+    //init tables
+    seed_table[0] = 0;
+    seed_table[1] = 16;
+    seed_table[2] = 32;
+    seed_table[3] = 3;
+    seed_table[4] = 6;
+    seed_table[5] = 12;
+    seed_table[6] = 24;
+    seed_table[7] = 48;
+    seed_table[8] = 35;
+    seed_table[9] = 5;
+    seed_table[10] = 10;
+    seed_table[11] = 20;
+    seed_table[12] = 40;
+    seed_table[13] = 19;
+    seed_table[14] = 38;
+    seed_table[15] = 15;
+ 
+
+	bb_offset = bb_freq_in;
+
+    unit_offset = 0.0015;
+    factor = 1 + unit_offset * bb_offset;//26.5
+    //v8 fast
+    /*
+    data_distance = 11925.75/(subsample_rate * 1.003);
+    header_data_distance = 11456.0/(subsample_rate * 1.003);
+    one_zero_rate = 0.185;
+    A = 542.4/float(subsample_rate * 1.003);
+    B = 7589.7/float(subsample_rate * 1.003);
+    dis_one_to_zero = 9223.75/(subsample_rate * 1.003);
+    dis_one_to_one = 11386.75/(subsample_rate * 1.003);
+    dis_zero_to_zero = 11925.875/(subsample_rate * 1.003);
+    dis_zero_to_one = 14087.71/(subsample_rate * 1.003);
+    
+    //v8 fast
+    data_distance = 11925.75 /(subsample_rate * factor);
+    header_data_distance = 11456.0 /(subsample_rate * factor);
+    one_zero_rate = 0.185;
+    A = 542.4 /float(subsample_rate * factor);
+    B = 7589.7 /float(subsample_rate * factor);
+    dis_one_to_zero = 9223.75 /(subsample_rate * factor);
+    dis_one_to_one = 11386.75 /(subsample_rate * factor);
+    dis_zero_to_zero = 11925.875 /(subsample_rate * factor);
+    dis_zero_to_one = 14087.71 /(subsample_rate * factor);
+    */
+
+    
+    //v8 slow
+    data_distance = 11925.75 * 2/(subsample_rate * factor);
+    header_data_distance = 11456.0 * 2/(subsample_rate * factor);
+    one_zero_rate = 0.185;
+    A = 542.4 * 2/float(subsample_rate * factor);
+    B = 7589.7 * 2/float(subsample_rate * factor);
+    dis_one_to_zero = 9223.75 * 2/(subsample_rate * factor);
+    dis_one_to_one = 11386.75 * 2/(subsample_rate * factor);
+    dis_zero_to_zero = 11925.875 * 2/(subsample_rate * factor);
+    dis_zero_to_one = 14087.71 * 2/(subsample_rate * factor);
+
+    distance_table[0] = 0;
+
+    std::cout << "distance table" << std::endl;
+    for(int i = 1; i < 16; i++){
+        distance_table[i] = seed_table[i] * A + B;
+        std::cout << distance_table[i] << std::endl;
+    }
+
+    sum_table[0] = 0;
+    std::cout << "sum table" << std::endl;
+    for(int i = 1; i < 16; i++){
+        sum_table[i] = sum_table[i-1] + distance_table[i];
+        std::cout << sum_table[i] << std::endl;
+    }
+
+	for (int k = 0; k < num_rake_filter; k++){
+
+		//std::cout << "size of buffer[" << k << "] = " << (345 * unit_time * (1+unit_offset*k) + 2 * jitter + 345 * unit_offset * unit_time) << std::endl; 
+ 		if(k == num_rake_filter - 1){
+            for(int j = 0; j < (sum_table[15] * (1+unit_offset*k) + 2 * jitter + sum_table[15] * unit_offset); j++){
+			    matched_pulses.push_front(0);
+            }
+        }
+        rake_offset[k] = (sum_table[15] * (1+unit_offset*(num_rake_filter-1)) + 2 * jitter + sum_table[15] * unit_offset) -
+                            (sum_table[15] * (1+unit_offset*k) + 2 * jitter + sum_table[15] * unit_offset);
+
+
+		all_pulse_energy[k] = 0;
+
+		//std::cout << "size of buffer[" << k << "] = " << matched_pulses[k].size() << std::endl; 
+	}
+	energy = 0;
+    for(int i = 0; i < num_rake_filter; i++){
+		long_matched_out[i] = 0;     
+        aggregated_header[i] = 0;
+	//scores[i] = 0;
+        last[i] = 0;
+	}
+        for(int i = 0; i < 100; i++){
+		data_energy_0[i] = 0; 
+		data_energy_1[i] = 0; 
+        /*
+        for(int j = 0; j < unit_time * 16 * 0.1; j++){
+            data_queue[i].push_front(0);
+        }
+        */
+	}
+
+    data_energy_out = 0;
+  
+    last_offset = 0;
+	correct_offset = 0;
+	start = 0;
+    last_max_response = 0;
+
+    pthread_mutex_destroy(&locks_0);
+    pthread_mutex_destroy(&locks_1);
+    pthread_mutex_destroy(&locks_2);
+    pthread_mutex_destroy(&locks_3);
+    pthread_mutex_destroy(&locks_4);
+    pthread_mutex_destroy(&locks_5);
+    pthread_mutex_destroy(&locks_6);
+    pthread_mutex_destroy(&locks_7);
+       //pthread_join(thread[i], NULL);
+
+    pthread_mutex_destroy(&shared_lock);
+    pthread_cond_destroy(&shared_cond);
+
+    Objs_0.C = this;
+    Objs_0.start_num =0;
+    Objs_0.end_num =5;
+    Objs_0.thread_num =0;
+    Objs_1.C = this;
+    Objs_1.start_num =5;
+    Objs_1.end_num =10;
+    Objs_1.thread_num =1;
+    Objs_2.C = this;
+    Objs_2.start_num =10;
+    Objs_2.end_num =15;
+    Objs_2.thread_num =2;
+    Objs_3.C = this;
+    Objs_3.start_num =15;
+    Objs_3.end_num=20;
+    Objs_3.thread_num =3;
+    Objs_4.C = this;
+    Objs_4.start_num =20;
+    Objs_4.end_num =25;
+    Objs_4.thread_num =4;
+    Objs_5.C = this;
+    Objs_5.start_num =25;
+    Objs_5.end_num =30;
+    Objs_5.thread_num =5;
+    Objs_6.C = this;
+    Objs_6.start_num =30;
+    Objs_6.end_num =35;
+    Objs_6.thread_num =6;
+    Objs_7.C = this;
+    Objs_7.start_num =35;
+    Objs_7.end_num=40;
+    Objs_7.thread_num =7;
+
+
+
+    count = 0;
+    //std::cerr << "start" << std::endl;
+    shared_lock = PTHREAD_MUTEX_INITIALIZER;
+    //pthread_mutex_lock(&shared_lock);
+    //std::cerr << "1" << std::endl;
+    shared_cond = PTHREAD_COND_INITIALIZER;
+    //std::cerr << "2" << std::endl;
+
+
+
+    locks_0 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_0);
+    locks_1 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_1);
+    locks_2 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_2);
+    locks_3 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_3);
+    locks_4 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_4);
+    locks_5 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_5);
+    locks_6 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_6);
+    locks_7 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&locks_7);
+
+
+
+    //std::cerr << "3" << std::endl;
+    
+    irets[0] = pthread_create(&threads_0, NULL, &rake_filter_process_helper, &Objs_0);
+    irets[1] = pthread_create(&threads_1, NULL, &rake_filter_process_helper, &Objs_1);
+    irets[2] = pthread_create(&threads_2, NULL, &rake_filter_process_helper, &Objs_2);
+    irets[3] = pthread_create(&threads_3, NULL, &rake_filter_process_helper, &Objs_3);
+    
+    irets[4] = pthread_create(&threads_4, NULL, &rake_filter_process_helper, &Objs_4);
+    irets[5] = pthread_create(&threads_5, NULL, &rake_filter_process_helper, &Objs_5);
+    irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
+    irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
+
+    //std::cerr << "4" << std::endl;
 }
 
 void nearfield_demod_impl::setPulseLen(float pulse_len_in){

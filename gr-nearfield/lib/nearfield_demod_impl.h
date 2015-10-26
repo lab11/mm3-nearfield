@@ -42,6 +42,7 @@ namespace gr {
     {
      private:
 	float N;
+	float bb_offset;
 	float threshold;
 	float SDR_sample_rate;
 	float pulse_max;
@@ -182,7 +183,7 @@ namespace gr {
     object Objs_7;
 
      public:
-      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, const std::string gatd_id);
+      nearfield_demod_impl(float sample_rate, float bitrate, float bitrate_accuracy, float post_bitrate_accuracy, float pulse_len, float pulse_len_accuracy, float post_pulse_len_accuracy, int packet_len, int header_len, float bb_freq, const std::string gatd_id);
       ~nearfield_demod_impl();
 
       // Where all the action really happens
@@ -202,6 +203,7 @@ namespace gr {
       void setSampleRate(float sample_rate_in);
       void setPacketLen(int packet_len_in);
       void setHeaderLen(int header_len_in);
+      void setbbfreq(float bb_freq_in);
       void rake_filter_process(int start_num, int end_num, int thread_num);
 
 
