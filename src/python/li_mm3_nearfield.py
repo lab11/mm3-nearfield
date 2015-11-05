@@ -304,7 +304,7 @@ def main():
 
         parser.add_option("-a", "--args", type="string", default="addr=192.168.10.2",
                           help="UHD device address args [default=%default]")
-	parser.add_option("-f", "--freq", type="float", default=905e6, help="USRP carrier frequency [default=%default]")
+	parser.add_option("-f", "--freq", type="float", default=900e6, help="USRP carrier frequency [default=%default]")
 	parser.add_option("-g", "--gain", type="float", default=62, help="USRP gain [default=%default]")
 	parser.add_option("-b", "--bitrate", type="float", default=290, help="RX Bitrate [default=%default]")
 	#12nope -- 267
