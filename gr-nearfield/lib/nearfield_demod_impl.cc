@@ -359,7 +359,7 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
         }else if(thread_num == 6){
             pthread_mutex_lock(&locks_6);
         }else if(thread_num == 7){
-            pthread_mutex_lock(&locks_7);
+            //pthread_mutex_lock(&locks_7);
         }
             
         for(int k = 0; k < 16; k++) {
@@ -561,7 +561,7 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
-    num_rake_filter = 40;
+    num_rake_filter = 35;
 
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -608,7 +608,9 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     dis_one_to_one = 11386.75/(subsample_rate * 1.003);
     dis_zero_to_zero = 11925.875/(subsample_rate * 1.003);
     dis_zero_to_one = 14087.71/(subsample_rate * 1.003);
+    */
     
+    /*
     //v8 fast
     data_distance = 11925.75 /(subsample_rate * factor);
     header_data_distance = 11456.0 /(subsample_rate * factor);
@@ -621,7 +623,7 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     dis_zero_to_one = 14087.71 /(subsample_rate * factor);
     */
 
-    
+
     //v8 slow
     data_distance = 11925.75 * 2/(subsample_rate * factor);
     header_data_distance = 11456.0 * 2/(subsample_rate * factor);
@@ -632,6 +634,7 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     dis_one_to_one = 11386.75 * 2/(subsample_rate * factor);
     dis_zero_to_zero = 11925.875 * 2/(subsample_rate * factor);
     dis_zero_to_one = 14087.71 * 2/(subsample_rate * factor);
+    
 
     distance_table[0] = 0;
 
@@ -775,7 +778,7 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     irets[4] = pthread_create(&threads_4, NULL, &rake_filter_process_helper, &Objs_4);
     irets[5] = pthread_create(&threads_5, NULL, &rake_filter_process_helper, &Objs_5);
     irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
-    irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
+    //irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
 
     //std::cerr << "4" << std::endl;
 }
@@ -1105,9 +1108,9 @@ int nearfield_demod_impl::work(int noutput_items,
 		        //std::cout << "finding data" << std::endl;
                 //std::cout << "pos: " << pos << "; n: " << n << "; data_acquired: " << data_acquired << std::endl;
                 if(pos >= (target_zero_pos -
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 4 * jitter)) && // window 7
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7 * jitter)) && // window 7
                     pos <= (target_zero_pos +
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 4.49 * jitter))){  //window 7.49
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7.49 * jitter))){  //window 7.49
 
                     //data_energy_0[i] = current * current + data_energy_0[i];
                     if(data_energy_0[n] < current * current){
@@ -1116,14 +1119,14 @@ int nearfield_demod_impl::work(int noutput_items,
                    //std::cout << "pos: " << pos << " zero[" << n << "]: " << current << std::endl;
 	            }
                 if (pos>=int(target_one_pos -
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 4.49 * jitter)) && //window 7.49
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7.49 * jitter)) && //window 7.49
                     pos<=int(target_one_pos +
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 4 * jitter))){ //window 7
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7 * jitter))){ //window 7
                     if(data_energy_1[n] < current * current) {
                         data_energy_1[n] = current * current;
                     }
                     if (pos == int(target_one_pos + 
-                                ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 4 * jitter))){ // window 7
+                                ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7 * jitter))){ // window 7
                         data_acquired = 1;
                     }
                     //std::cout << "pos: " << pos << " one[" << n << "]: " << current << std::endl;
