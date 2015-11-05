@@ -169,7 +169,7 @@ class my_top_block(grc_wxgui.top_block_gui):
 	self.nb0.GetPage(0).Add(self.threshold_text)
 
 	if options.playback == True:
-		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "my_iq_recording.dat", True)
+		self.source2 = blocks.file_source(gr.sizeof_gr_complex, "iq_recording.dat", True)
 		self.source = blocks.throttle(gr.sizeof_gr_complex,self._sample_rate)
 		self.connect(self.source2, self.source)
 	else:
@@ -306,7 +306,7 @@ def main():
                           help="UHD device address args [default=%default]")
 	parser.add_option("-f", "--freq", type="float", default=900e6, help="USRP carrier frequency [default=%default]")
 	parser.add_option("-g", "--gain", type="float", default=62, help="USRP gain [default=%default]")
-	parser.add_option("-b", "--bitrate", type="float", default=290, help="RX Bitrate [default=%default]")
+	parser.add_option("-b", "--bitrate", type="float", default=670, help="RX Bitrate [default=%default]")
 	#12nope -- 267
         #40nope -- 125
         parser.add_option("-B", "--bitrate-accuracy", type="float", default=15, help="RX Bitrate Accuracy (%) [default=%default]")
@@ -315,7 +315,7 @@ def main():
 	parser.add_option("-P", "--pulse-len-accuracy", type="float", default=10, help="Pulse Length Accuracy (%)")
 	parser.add_option("", "--post-pulse-len-accuracy", type="float", default=10, help="Post-sync Pulse Length Accuracy (%)")
 	parser.add_option("-h", "--header-len", type="int", default=4, help="Header Length (bits)")
-	parser.add_option("-n", "--packet-len", type="int", default=32, help="Packet Length (bits")
+	parser.add_option("-n", "--packet-len", type="int", default=26, help="Packet Length (bits")
 	parser.add_option("-s", "--sample-rate", type="float", default=12.5e6, help="RX Sample Rate [default=%default]")
 	parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
 	parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")
