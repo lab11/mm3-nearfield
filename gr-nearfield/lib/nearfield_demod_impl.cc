@@ -71,7 +71,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	set_alignment(std::max(1, alignment_multiple));
 
 	// variables
-	threshold = 6.5;            // threshold set after observing data
+	threshold = 8;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
