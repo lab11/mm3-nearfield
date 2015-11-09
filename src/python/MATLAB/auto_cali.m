@@ -19,7 +19,7 @@ end
 all_distance(1) = 0;
 start = 0;
 for n = 1: length(all_distance_raw) - 1
-    if(all_distance_raw(n) > 14000*2 && all_distance_raw(n) < 17000*2 && start == 0)
+    if(all_distance_raw(n) > 13000*2 && all_distance_raw(n) < 19000*2 && start == 0)
         start = 1;
     end
     if(all_distance_raw(n) > 0 && start == 1)
