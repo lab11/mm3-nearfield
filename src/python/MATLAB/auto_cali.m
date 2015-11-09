@@ -65,7 +65,7 @@ offset = B(1)/(542.4 * 2);
 if(abs(1 - offset) < 0) 
     value = abs(1 - offset) / 0.0015 + 20;
 else
-    value = (1 - offset)/0.0015 + 20;
+    value = (1 - offset)/0.0015 + 15;
 end
 fprintf(fileID, 'offset is: %f\n', floor(value) + 0.5);
 fprintf('offset is: %f\n', floor(value) + 0.5);
