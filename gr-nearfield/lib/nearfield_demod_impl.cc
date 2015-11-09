@@ -161,7 +161,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
-    num_rake_filter = 40;
+    num_rake_filter = 35;
 
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -886,7 +886,6 @@ int nearfield_demod_impl::work(int noutput_items,
 	    	current = max_current;
 	    	//current = avg_current/subsample_rate;
 		    max_current = 0;
-    		avg_current = 0;
 		//std::cout << current << std::endl;
 		    //std::cout << "finding header" << std::endl;
             for(int i = 0; i< num_rake_filter; i++){
@@ -1034,7 +1033,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         //std::cout << "response = " << last_max_response << std::endl;
                         //std::cout << "sample_counter = " << sample_counter << std::endl;
                         sync = 1;
-			            last_peak_response = last_max_response;
+			last_peak_response = last_max_response;
                         data_acquired = 0;
                         pos = 0;
                         target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 3;
@@ -1062,7 +1061,7 @@ int nearfield_demod_impl::work(int noutput_items,
                             //std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
                             //std::cout << "sample_counter = " << sample_counter << std::endl;
                             sync = 1;
-			                last_peak_response = last_max_response;
+			    last_peak_response = last_max_response;
                             data_acquired = 0;
                             pos = 0;
                             target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 3;
@@ -1192,15 +1191,15 @@ int nearfield_demod_impl::work(int noutput_items,
 				
 			
 				sync = 0;                        // start over looking for sync
-				prf_vec.clear();
-				pulse_vec.clear();
+				//prf_vec.clear();
+				//pulse_vec.clear();
 				demod_data.clear();
-				prf_count = 0;
+				//prf_count = 0;
 				pulse_count = 0;
 				n = 0;
-				sync_prf = 0;
-				sync_prf2 = 0;
-				sync_pulse = 0;
+				//sync_prf = 0;
+				//sync_prf2 = 0;
+				//sync_pulse = 0;
 				valid_pulse = 0;
 				valid_count = 0;
                 last_max_response = 0;
