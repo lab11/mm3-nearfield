@@ -60,14 +60,29 @@ end
 fprintf('calibration succeeded\n');
 
 fileID = fopen('calibrate.txt','w');
-offset = B(1)/(542.4 * 2);
+%offset = B(1)/(542.4 * 2);
 %offset = B(1)/(542.4);
-if(abs(1 - offset) < 0) 
-    value = abs(1 - offset) / 0.0015 + 20;
+offset = ((542.4 * 2 * (1 + 15.5*0.0015)) - B(1))/B(1); 
+if(offset < 0) 
+    value = offset / 0.0015;
 else
-    value = (1 - offset)/0.0015 + 15;
+    value = offset /0.0015;
 end
 fprintf(fileID, 'offset is: %f\n', floor(value) + 0.5);
 fprintf('offset is: %f\n', floor(value) + 0.5);
+
+%%estimation
+factor = 1 + 0.0015 * (value);
+center = 1 + 0.0015*15.5;
+data_distance = center * 11925.75 * 2/factor;
+header_data_distance = center * 11456.0 * 2/factor;
+est_A = center * 542.4 * 2/factor;
+est_B = center *7589.7 * 2/factor;
+dis_one_to_zero = center * 9223.75 * 2/factor;
+dis_one_to_one = center * 11386.75 * 2/factor;
+dis_zero_to_zero = center * 11925.875 * 2/factor;
+dis_zero_to_one = center * 14087.71 * 2/factor;
+ 
+
 
             

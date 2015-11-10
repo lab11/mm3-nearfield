@@ -88,6 +88,8 @@ namespace gr {
     float window_size;
 	//std::deque<float> matched_pulses;
 	std::deque<float> data_queue[100];
+	std::deque<float> pulse_queue[40];
+	std::deque<float> pulse_loc_queue[40];
 	float energy;
 	float all_pulse_energy[40];
 	int sample_ctr;
@@ -132,6 +134,8 @@ namespace gr {
 	float avg_current;
 	float data_energy_0[100];
 	float data_energy_1[100];
+	float data_pos_0[100];
+	float data_pos_1[100];
     float reset_data;
 	float delay;
     float peak_distance;
@@ -143,6 +147,7 @@ namespace gr {
     float factor;
     float max_offset;
     float rake_offset[40];
+    float data_window;
     int process_counter;
 
     pthread_t threads_0;

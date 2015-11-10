@@ -1,2 +1,2 @@
 #!/bin/bash/
-matlab -nojvm -r "auto_cali;quit;"
+matlab -nojvm -nodisplay -nodesktop -r "auto_cali;quit;"

@@ -108,6 +108,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	n = 0;              // counter for N
 	max_sample = 0;
     subsample_rate = 250.0;
+    data_window = 7.0;
 	
 	threshold_sync = 0.7;
 	max_header_response = 0;
@@ -120,6 +121,12 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     target_zero_pos = 0;
 
 
+    for(int i = 0; i < 100; i++){
+	    data_energy_0[i] = 0; 
+		data_energy_1[i] = 0; 
+	    data_pos_0[i] = 0; 
+		data_pos_1[i] = 0; 
+    }
     //unit_time = 103000.0/(16 * subsample_rate);
     //tuning params
     //v7
@@ -407,15 +414,23 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
                     for(int loc = rake_offset[i]+int((1+unit_offset*i) * sum_table[k]); 
                             loc <= rake_offset[i]+int((1+unit_offset*i) * sum_table[k] + (2 * jitter - 1) + unit_offset * sum_table[k]);
                             loc++){
-                       /*
-                        if(thread_num == 0 && i == 0) {
-                            std::cout << "thread: " << thread_num << ", loc: " << loc << ", pulse: " << matched_pulses[loc] << std::endl;
-                        }
-                        */
+                       
                         
                         if(matched_pulses[loc] > max_pulse) {
                             max_pulse = matched_pulses[loc];
+
+                            //pulse_loc_queue[i][k] = loc;
+                            //pulse_queue[i][k] = max_pulse;
                         }
+                        /*
+                        if((i == 15 || i == 16)) {
+                            std::cout << "filter: " << i << ", loc: " << loc << ", pulse: " << matched_pulses[loc] << std::endl;
+                        }
+                        */
+
+
+                        
+                        
                     }
                     long_matched_out[i] += max_pulse;
 		    /*
@@ -638,17 +653,17 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
 
     distance_table[0] = 0;
 
-    std::cout << "distance table" << std::endl;
+    //std::cout << "distance table" << std::endl;
     for(int i = 1; i < 16; i++){
         distance_table[i] = seed_table[i] * A + B;
-        std::cout << distance_table[i] << std::endl;
+        //std::cout << distance_table[i] << std::endl;
     }
 
     sum_table[0] = 0;
-    std::cout << "sum table" << std::endl;
+    //std::cout << "sum table" << std::endl;
     for(int i = 1; i < 16; i++){
         sum_table[i] = sum_table[i-1] + distance_table[i];
-        std::cout << sum_table[i] << std::endl;
+        //std::cout << sum_table[i] << std::endl;
     }
 
 	for (int k = 0; k < num_rake_filter; k++){
@@ -674,15 +689,19 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
 	//scores[i] = 0;
         last[i] = 0;
 	}
-        for(int i = 0; i < 100; i++){
-		data_energy_0[i] = 0; 
-		data_energy_1[i] = 0; 
+
         /*
         for(int j = 0; j < unit_time * 16 * 0.1; j++){
             data_queue[i].push_front(0);
         }
         */
-	}
+        
+    for(int j = 0; j < num_rake_filter; j++){
+        for( int i = 0; i < 16; i++)
+            pulse_queue[j].push_front(0);
+            pulse_loc_queue[j].push_front(0);
+    }
+    
 
     data_energy_out = 0;
   
@@ -697,9 +716,9 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     pthread_mutex_destroy(&locks_3);
     pthread_mutex_destroy(&locks_4);
     pthread_mutex_destroy(&locks_5);
-    pthread_mutex_destroy(&locks_6);
-    pthread_mutex_destroy(&locks_7);
-       //pthread_join(thread[i], NULL);
+    //pthread_mutex_destroy(&locks_6);
+    //pthread_mutex_destroy(&locks_7);
+    //pthread_join(thread[i], NULL);
 
     pthread_mutex_destroy(&shared_lock);
     pthread_cond_destroy(&shared_cond);
@@ -1028,17 +1047,34 @@ int nearfield_demod_impl::work(int noutput_items,
                     } else {
                         time_offset = last_offset;
                         correct_offset = last_offset + 0.5;
-
-                       	//std::cout << "find header, clock offset = " << time_offset << std::endl;
-                        //std::cout << "response = " << last_max_response << std::endl;
-                        //std::cout << "sample_counter = " << sample_counter << std::endl;
+                        /*
+                       	std::cout << "find header, clock offset = " << time_offset << std::endl;
+                        std::cout << "response = " << last_max_response << std::endl;
+                        std::cout << "sample_counter = " << sample_counter << std::endl;
+                        for(int x = 1; x<16; x++) {
+                            std::cout << "matched_pulse[" << x << "] = " << pulse_queue[last_offset][x] << "; loc: " << 
+                                pulse_loc_queue[last_offset][x] - pulse_loc_queue[last_offset][x-1] << std::endl;
+                        }
+                        std::cout << "header_data_distance: " << subsample_rate * header_data_distance * 
+                                                (1 + unit_offset * correct_offset) << std::endl;
+                        std::cout << "dis_one_to_zero: " << subsample_rate * dis_one_to_zero * 
+                                                (1 + unit_offset * correct_offset) << std::endl;
+                        std::cout << "dis_one_to_one: " << subsample_rate * dis_one_to_one *
+                                                (1 + unit_offset * correct_offset) << std::endl;
+                        std::cout << "dis_zero_to_zero: " << subsample_rate * dis_zero_to_zero * 
+                                                (1 + unit_offset * correct_offset) << std::endl;
+                        std::cout << "dis_zero_to_one: " << subsample_rate * dis_zero_to_one * 
+                                                (1 + unit_offset * correct_offset) << std::endl;
+                        */
                         sync = 1;
-			last_peak_response = last_max_response;
+			            last_peak_response = last_max_response;
                         data_acquired = 0;
                         pos = 0;
-                        target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 3;
+                        target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - data_window;
                         target_one_pos = (header_data_distance + dis_zero_to_zero * one_zero_rate/(1))*(1 + unit_offset * correct_offset)
-                                            - 3;
+                                            - data_window;
+    	                data_pos_0[0] = target_zero_pos;
+	                	data_pos_1[0] = target_one_pos;
                         peak_distance = 0;
                         //std::cout << "2.5" << std::endl;
                         /*
@@ -1056,17 +1092,34 @@ int nearfield_demod_impl::work(int noutput_items,
                             //valid stronger peak!!!
                             time_offset = last_offset;
                             correct_offset = last_offset + 0.5;
-
-                            //std::cout << "find new header, clock offset = " << time_offset << std::endl;
-                            //std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
-                            //std::cout << "sample_counter = " << sample_counter << std::endl;
+                            /*
+                            std::cout << "find new header, clock offset = " << time_offset << std::endl;
+                            std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
+                            std::cout << "sample_counter = " << sample_counter << std::endl;
+                            for(int x = 1; x<16; x++) {
+                                std::cout << "matched_pulse[" << x << "] = " << pulse_queue[last_offset][x] << "; loc: " << 
+                                    pulse_loc_queue[last_offset][x] - pulse_loc_queue[last_offset][x-1] << std::endl;
+                            }
+                            std::cout << "header_data_distance: " << subsample_rate * header_data_distance * 
+                                                    (1 + unit_offset * correct_offset) << std::endl;
+                            std::cout << "dis_one_to_zero: " << subsample_rate * dis_one_to_zero * 
+                                                    (1 + unit_offset * correct_offset) << std::endl;
+                            std::cout << "dis_one_to_one: " << subsample_rate * dis_one_to_one *
+                                                    (1 + unit_offset * correct_offset) << std::endl;
+                            std::cout << "dis_zero_to_zero: " << subsample_rate * dis_zero_to_zero * 
+                                                    (1 + unit_offset * correct_offset) << std::endl;
+                            std::cout << "dis_zero_to_one: " << subsample_rate * dis_zero_to_one * 
+                                                    (1 + unit_offset * correct_offset) << std::endl;
+                            */
                             sync = 1;
-			    last_peak_response = last_max_response;
+			                last_peak_response = last_max_response;
                             data_acquired = 0;
                             pos = 0;
-                            target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 3;
+                            target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - data_window;
                             target_one_pos = (header_data_distance + dis_zero_to_zero*one_zero_rate/(1))*(1 + unit_offset*correct_offset)
-                                                - 3;
+                                                - data_window;
+    	                    data_pos_0[0] = target_zero_pos;
+	                    	data_pos_1[0] = target_one_pos;
                             peak_distance = 0;
                             reset_data = 1;
                             //std::cout << "2.5" << std::endl;
@@ -1092,57 +1145,72 @@ int nearfield_demod_impl::work(int noutput_items,
     	            for(int i = 0; i < N; i++){
 	            		data_energy_0[i] = 0;
 	            		data_energy_1[i] = 0;
+	            		data_pos_0[i] = 0;
+	            		data_pos_1[i] = 0;
+                        //std::cout << "reset pos to zero for new header" << std::endl;
 	            	}
                     data_energy_out = 0;
 		            n = 0;
 		            demod_data.clear();
                     data_acquired = 0;
                     pos = 0;
-                    target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - 3;
+                    target_zero_pos = header_data_distance * (1 + unit_offset * correct_offset) - data_window;
                     target_one_pos = (header_data_distance + dis_zero_to_zero * one_zero_rate/(1)) * (1 + unit_offset * correct_offset)
-                                        - 3;
+                                        - data_window;
+	                data_pos_0[0] = target_zero_pos;
+	            	data_pos_1[0] = target_one_pos;
+                    reset_data = 0;
                 }    
  
                 //std::cout << current << std::endl;
 		        //std::cout << "finding data" << std::endl;
                 //std::cout << "pos: " << pos << "; n: " << n << "; data_acquired: " << data_acquired << std::endl;
                 if(pos >= (target_zero_pos -
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7 * jitter)) && // window 7
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + data_window * jitter)) && // window 7
                     pos <= (target_zero_pos +
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7.49 * jitter))){  //window 7.49
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + data_window * jitter))){  //window 7.49
 
                     //data_energy_0[i] = current * current + data_energy_0[i];
                     if(data_energy_0[n] < current * current){
                         data_energy_0[n] = current * current;
+                        data_pos_0[n] = pos;
+                        //std::cout << "current pos zero" << n << " change to " << data_pos_0[n] << std::endl;
                     }
                    //std::cout << "pos: " << pos << " zero[" << n << "]: " << current << std::endl;
 	            }
                 if (pos>=int(target_one_pos -
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7.49 * jitter)) && //window 7.49
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + data_window * jitter)) && //window 7.49
                     pos<=int(target_one_pos +
-                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7 * jitter))){ //window 7
+                    ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + data_window * jitter))){ //window 7
                     if(data_energy_1[n] < current * current) {
                         data_energy_1[n] = current * current;
+                        data_pos_1[n] = pos;
+                        //std::cout << "current pos one" << n << " change to " << data_pos_1[n] << std::endl;
                     }
                     if (pos == int(target_one_pos + 
-                                ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + 7 * jitter))){ // window 7
+                                ((unit_offset * 0) * (data_distance * 15 + header_data_distance) + data_window * jitter))){ // window 7
                         data_acquired = 1;
                     }
                     //std::cout << "pos: " << pos << " one[" << n << "]: " << current << std::endl;
                 }
 
+                //std::cout << "current pos: " << data_pos_0[n] << "; " << data_pos_1[n] << std::endl;
                 //compare and get data
                 if((data_energy_0[n] >= data_energy_1[n]) && data_acquired){
                         demod_data.push_back(1);
                         n++;
-                        target_one_pos = (dis_zero_to_one * (1 + unit_offset * correct_offset))  + target_zero_pos;
-                        target_zero_pos = (dis_zero_to_zero * (1 + unit_offset * correct_offset)) + target_zero_pos;
+                        target_one_pos = (dis_zero_to_one * (1 + unit_offset * correct_offset))  + data_pos_0[n - 1];
+                        target_zero_pos = (dis_zero_to_zero * (1 + unit_offset * correct_offset)) + data_pos_0[n - 1];
+                        //std::cout << "current: " << data_pos_0[n] << 
+                        //        "; next_zero: " << target_zero_pos << "; next_one: " << target_one_pos << std::endl; 
                         data_acquired = 0;
                 } else if((data_energy_0[n] <= data_energy_1[n]) && data_acquired) {
                         demod_data.push_back(0);
                         n++;
-                        target_zero_pos = (dis_one_to_zero  * (1 + unit_offset * correct_offset)) + target_one_pos;
-                        target_one_pos = (dis_one_to_one  * (1 + unit_offset * correct_offset)) + target_one_pos;
+                        target_zero_pos = (dis_one_to_zero  * (1 + unit_offset * correct_offset)) + data_pos_1[n - 1];
+                        target_one_pos = (dis_one_to_one  * (1 + unit_offset * correct_offset)) + data_pos_1[n - 1];
+                        //std::cout << "current: " << data_pos_1[n] << 
+                        //        "; next_zero: " << target_zero_pos << "; next_one: " << target_one_pos << std::endl; 
                         data_acquired = 0;
                 }
                 pos++;
@@ -1215,6 +1283,9 @@ int nearfield_demod_impl::work(int noutput_items,
 				for(int i = 0; i < N; i++){
 	            	data_energy_0[i] = 0; 
 	            	data_energy_1[i] = 0; 
+	            	data_pos_0[i] = 0; 
+	            	data_pos_1[i] = 0; 
+                    //std::cout << "reset pos to zero for new header" << std::endl;
 	          	}
                 data_energy_out = 0;
                 time_offset = 0;
