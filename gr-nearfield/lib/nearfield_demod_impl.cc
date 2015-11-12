@@ -168,7 +168,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
-    num_rake_filter = 30;
+    num_rake_filter = 32;
 
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -364,14 +364,18 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
         }else if(thread_num == 5){
             pthread_mutex_lock(&locks_5);
         }else if(thread_num == 6){
-            //pthread_mutex_lock(&locks_6);
+            pthread_mutex_lock(&locks_6);
         }else if(thread_num == 7){
-            //pthread_mutex_lock(&locks_7);
+            pthread_mutex_lock(&locks_7);
         }
             
-        for(int k = 0; k < 16; k++) {
+
             //std::cout << start_counter << std::endl;
+            //
+        for(int k = 0; k < 16; k++) {
             for(int i = start_counter; i < end_num; i++){
+
+
             //for(int j = 0; j < matched_pulses[i].size(); j++){
                 if(k == 0) {
                     float max_pulse = 0;     
@@ -448,7 +452,7 @@ void nearfield_demod_impl::rake_filter_process(int start_num, int end_num, int t
         //Lock mutex()
         pthread_mutex_lock(&shared_lock);
         count = count + 1;
-        if(count == (num_rake_filter/5)){
+        if(count == (num_rake_filter/4)){
             pthread_cond_signal(&shared_cond);
         }
         pthread_mutex_unlock(&shared_lock);
@@ -576,7 +580,7 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
-    num_rake_filter = 30;
+    num_rake_filter = 32;
 
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -716,45 +720,53 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     pthread_mutex_destroy(&locks_3);
     pthread_mutex_destroy(&locks_4);
     pthread_mutex_destroy(&locks_5);
-    //pthread_mutex_destroy(&locks_6);
-    //pthread_mutex_destroy(&locks_7);
+    pthread_mutex_destroy(&locks_6);
+    pthread_mutex_destroy(&locks_7);
     //pthread_join(thread[i], NULL);
 
     pthread_mutex_destroy(&shared_lock);
     pthread_cond_destroy(&shared_cond);
 
     Objs_0.C = this;
-    Objs_0.start_num =0;
-    Objs_0.end_num =5;
-    Objs_0.thread_num =0;
+    Objs_0.thread_num = 0;
+    Objs_0.start_num = 0;
+    Objs_0.end_num = (Objs_0.thread_num + 1) * 4;
+
     Objs_1.C = this;
-    Objs_1.start_num =5;
-    Objs_1.end_num =10;
-    Objs_1.thread_num =1;
+    Objs_1.thread_num = 1;
+    Objs_1.start_num = Objs_1.thread_num * 4;
+    Objs_1.end_num = (Objs_1.thread_num + 1) * 4;
+
     Objs_2.C = this;
-    Objs_2.start_num =10;
-    Objs_2.end_num =15;
-    Objs_2.thread_num =2;
+    Objs_2.thread_num = 2;
+    Objs_2.start_num = Objs_2.thread_num * 4;
+    Objs_2.end_num = (Objs_2.thread_num + 1) * 4;
+
     Objs_3.C = this;
-    Objs_3.start_num =15;
-    Objs_3.end_num=20;
-    Objs_3.thread_num =3;
+    Objs_3.thread_num = 3;
+    Objs_3.start_num = Objs_3.thread_num * 4;
+    Objs_3.end_num = (Objs_3.thread_num + 1) * 4;
+
     Objs_4.C = this;
-    Objs_4.start_num =20;
-    Objs_4.end_num =25;
-    Objs_4.thread_num =4;
+    Objs_4.thread_num = 4;
+    Objs_4.start_num = Objs_4.thread_num * 4;
+    Objs_4.end_num = (Objs_4.thread_num + 1) * 4;
+
     Objs_5.C = this;
-    Objs_5.start_num =25;
-    Objs_5.end_num =30;
-    Objs_5.thread_num =5;
+    Objs_5.thread_num = 5;
+    Objs_5.start_num = Objs_5.thread_num * 4;
+    Objs_5.end_num = (Objs_5.thread_num + 1) * 4;
+
     Objs_6.C = this;
-    Objs_6.start_num =30;
-    Objs_6.end_num =35;
-    Objs_6.thread_num =6;
+    Objs_6.thread_num = 6;
+    Objs_6.start_num = Objs_6.thread_num * 4;
+    Objs_6.end_num = (Objs_6.thread_num + 1) * 4;
+
     Objs_7.C = this;
-    Objs_7.start_num =35;
-    Objs_7.end_num=40;
-    Objs_7.thread_num =7;
+    Objs_7.thread_num = 7;
+    Objs_7.start_num = Objs_7.thread_num * 4;
+    Objs_7.end_num= (Objs_7.thread_num + 1) * 4;
+
 
 
 
@@ -796,8 +808,8 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     
     irets[4] = pthread_create(&threads_4, NULL, &rake_filter_process_helper, &Objs_4);
     irets[5] = pthread_create(&threads_5, NULL, &rake_filter_process_helper, &Objs_5);
-    //irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
-    //irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
+    irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
+    irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
 
     //std::cerr << "4" << std::endl;
 }
@@ -929,7 +941,7 @@ int nearfield_demod_impl::work(int noutput_items,
                     
             
             pthread_mutex_lock(&shared_lock);
-            while(count < (num_rake_filter/5)){
+            while(count < (num_rake_filter/4)){
                 pthread_cond_wait(&shared_cond, &shared_lock);
             }
             count = 0;
@@ -1047,10 +1059,13 @@ int nearfield_demod_impl::work(int noutput_items,
                     } else {
                         time_offset = last_offset;
                         correct_offset = last_offset + 0.5;
+
                         /*
                        	std::cout << "find header, clock offset = " << time_offset << std::endl;
                         std::cout << "response = " << last_max_response << std::endl;
                         std::cout << "sample_counter = " << sample_counter << std::endl;
+
+
                         for(int x = 1; x<16; x++) {
                             std::cout << "matched_pulse[" << x << "] = " << pulse_queue[last_offset][x] << "; loc: " << 
                                 pulse_loc_queue[last_offset][x] - pulse_loc_queue[last_offset][x-1] << std::endl;
@@ -1088,14 +1103,17 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_max_response = max_header_response;
                         last_offset = time_offset;
                     } else {
-                        if(peak_distance < (100000/subsample_rate) && last_max_response > last_peak_response + 0.2) {
+                        if(peak_distance < (1000000/subsample_rate) && last_max_response > last_peak_response + 0.2) {
                             //valid stronger peak!!!
                             time_offset = last_offset;
                             correct_offset = last_offset + 0.5;
+
                             /*
                             std::cout << "find new header, clock offset = " << time_offset << std::endl;
                             std::cout << "response = " << last_max_response << ", last peak = " << last_peak_response << std::endl;
                             std::cout << "sample_counter = " << sample_counter << std::endl;
+
+
                             for(int x = 1; x<16; x++) {
                                 std::cout << "matched_pulse[" << x << "] = " << pulse_queue[last_offset][x] << "; loc: " << 
                                     pulse_loc_queue[last_offset][x] - pulse_loc_queue[last_offset][x-1] << std::endl;
@@ -1219,7 +1237,7 @@ int nearfield_demod_impl::work(int noutput_items,
 
 
             //got all data
-			if(n == N && peak_distance > (100000/subsample_rate)){                            // we've looked for all the data
+			if(n == N && peak_distance > (1000000/subsample_rate)){                            // we've looked for all the data
 				//Prepare outgoing packet for GATD
 				//std::cout << "got all data" << std::endl;
 				std::vector<uint8_t> demod_data_out;
