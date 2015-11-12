@@ -1088,7 +1088,7 @@ int nearfield_demod_impl::work(int noutput_items,
                         last_max_response = max_header_response;
                         last_offset = time_offset;
                     } else {
-                        if(peak_distance < (10000000/subsample_rate) && last_max_response > last_peak_response + 0.2) {
+                        if(peak_distance < (100000/subsample_rate) && last_max_response > last_peak_response + 0.2) {
                             //valid stronger peak!!!
                             time_offset = last_offset;
                             correct_offset = last_offset + 0.5;
@@ -1219,7 +1219,7 @@ int nearfield_demod_impl::work(int noutput_items,
 
 
             //got all data
-			if(n == N && peak_distance > (10000000/subsample_rate)){                            // we've looked for all the data
+			if(n == N && peak_distance > (100000/subsample_rate)){                            // we've looked for all the data
 				//Prepare outgoing packet for GATD
 				//std::cout << "got all data" << std::endl;
 				std::vector<uint8_t> demod_data_out;
