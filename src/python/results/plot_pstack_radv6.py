@@ -2,6 +2,7 @@
 # Python script to parse Pstack radio output
 # Looks for alternating transmissions of C_MEAS and C_REF data
 # 9/2/2015 Gyouho Kim
+# 11/15/2015 Gyouho Kim: Added date/time logging
 
 import sys
 import csv
@@ -20,12 +21,15 @@ output_file += '.csv'
 
 cmeas = []
 cref = []
+date = []
+time = []
 
 cmeas_int = []
 cref_int = []
 
 cmeas_cal = []
 i=0
+j=0
 
 for line in lines:
 	if line[0]=='0' or line[0]=='1':
@@ -38,7 +42,13 @@ for line in lines:
 		else:
 			cmeas.append(data)
 			cmeas_int.append(int(data,2))
-		i += 1
+			
+			timestamp_split = lines[j-2].split()
+			time.append(timestamp_split[3])
+			date.append(timestamp_split[1] + " " + timestamp_split[2])
+
+		i += 1 # data index
+	j += 1 # line index
 
 for i in range(0,min(len(cmeas_int),len(cref_int))):
 	cmeas_cal.append(float(cmeas_int[i])/float(cref_int[i])*100000)
@@ -61,10 +71,10 @@ print len(cref_int)
 
 
 # Export to CSV
-rows = zip(cmeas_int,cref_int,cmeas_cal)
+rows = zip(date,time,cmeas_int,cref_int,cmeas_cal)
 
 wr = csv.writer(open(output_file,'w'), delimiter=',', lineterminator='\n')
-wr.writerow(['C_MEAS','C_REF','C_MEAS_CAL'])
+wr.writerow(['DATE','TIME','C_MEAS','C_REF','C_MEAS_CAL'])
 for row in rows:
 	wr.writerow(row)
 
