@@ -1255,12 +1255,12 @@ int nearfield_demod_impl::work(int noutput_items,
 	            double seconds = difftime(current_time, last_time);
 	            last_time = current_time;
 				char* dt = std::ctime(&current_time);
-					
-				std::cout << "SENDING MESSAGE" << std::endl;
-                std::cout << "offset: " << correct_offset << std::endl;
-				std::cout << "@@@" << dt << ", " << seconds << " second." << " bitrate: " <<
-                    (10000000/(subsample_rate * (1+correct_offset * unit_offset) * data_distance)) << std::endl;
-				d_log_file << "SENDING MESSAGE" << std::endl;
+				
+				int demod_data_sum = 0;
+				std::cout << "RECEIVED MESSAGE" << std::endl;
+				std::cout << "@@@" << dt << ", " << seconds << " seconds," << " bitrate: " <<
+                    (10000000/(subsample_rate * (1+correct_offset * unit_offset) * data_distance)) << ", offset: " << correct_offset << std::endl;
+				d_log_file << "RECEIVED MESSAGE" << std::endl;
 			        d_log_file << "@@@" << dt << ", " << seconds << " second." << " bitrate: " << 
                         (10000000/(subsample_rate * (1+correct_offset * unit_offset) * data_distance)) << std::endl;
                     /*
@@ -1271,10 +1271,11 @@ int nearfield_demod_impl::work(int noutput_items,
 				for(int ii = demod_data.size() - 1; ii >= 0; ii--){
 					std::cout << (int)(demod_data[ii]) << ", ";
 					d_log_file << (int)(demod_data[ii]) << ", ";
+					demod_data_sum += demod_data[ii] << ii;
 				}
 				d_log_file << std::endl;
 				std::cout << std::endl;
-				
+				printf("Data: 0x%X\n\n", demod_data_sum);
 			
 				sync = 0;                        // start over looking for sync
 				//prf_vec.clear();
