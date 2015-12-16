@@ -168,7 +168,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
-    num_rake_filter = 32;
+    num_rake_filter = 24;
 
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -580,7 +580,7 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     //jitter = 1.1;
     //std::cout << jitter << std::endl;
 	//jitter = 1;
-    num_rake_filter = 32;
+    num_rake_filter = 24;
 
 	sub_sample_counter = 0;	
 	max_current = 0;
@@ -808,8 +808,8 @@ void nearfield_demod_impl::setbbfreq(float bb_freq_in){
     
     irets[4] = pthread_create(&threads_4, NULL, &rake_filter_process_helper, &Objs_4);
     irets[5] = pthread_create(&threads_5, NULL, &rake_filter_process_helper, &Objs_5);
-    irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
-    irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
+    //irets[6] = pthread_create(&threads_6, NULL, &rake_filter_process_helper, &Objs_6);
+    //irets[7] = pthread_create(&threads_7, NULL, &rake_filter_process_helper, &Objs_7);
 
     //std::cerr << "4" << std::endl;
 }
