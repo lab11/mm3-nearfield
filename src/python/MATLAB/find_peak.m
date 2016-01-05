@@ -4,10 +4,11 @@ i = 1;
 last_max = 0;
 peak(1) = 0;
 m = [];
+threshold = 0.3;
 
 
     for n = 1: length(C)
-        if(C(n) > 0.45)
+        if(C(n) > threshold)
             m = [m n];
             if(C(n) > last_max)
                 last_max = C(n);
