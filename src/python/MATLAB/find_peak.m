@@ -7,7 +7,7 @@ m = [];
 
 
     for n = 1: length(C)
-        if(C(n) > 0.45)
+        if(C(n) > 0.7)
             m = [m n];
             if(C(n) > last_max)
                 last_max = C(n);

@@ -212,8 +212,8 @@ class my_top_block(grc_wxgui.top_block_gui):
     #self.mag1 = blocks.complex_to_mag()
 
     self.tm_framer = nearfield.nearfield_demod(self._sample_rate, self._down_bitrate, self._down_bitrate_accuracy, self._down_post_bitrate_accuracy, self._pulse_len, self._pulse_len_accuracy, self._post_pulse_len_accuracy, self._packet_len, self._header_len, self._bb_freq, GATD_PROFILE_ID)
-    self.socket_pdu = blocks.socket_pdu("UDP_CLIENT", GATD_HOST, GATD_PORT, 10000)
-    self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "pdus")
+    #self.socket_pdu = blocks.socket_pdu("UDP_CLIENT", GATD_HOST, GATD_PORT, 10000)
+    #self.msg_connect(self.tm_framer, "frame_out", self.socket_pdu, "pdus")
 
     #self.connect(self.source, self.tm_framer)
     self.connect(self.source, self.mag, self.tm_framer)
@@ -334,7 +334,7 @@ def main():
     parser.add_option("", "--post-pulse-len-accuracy", type="float", default=10, help="Post-sync Pulse Length Accuracy (%)")
     parser.add_option("-h", "--header-len", type="int", default=16, help="Header Length (bits)")
     parser.add_option("-n", "--packet-len", type="int", default=24, help="Packet Length (bits")
-    parser.add_option("-n", "--bb-freq", type="float", default=9, help="base band freq")
+    parser.add_option("-n", "--bb-freq", type="float", default=15, help="base band freq")
     parser.add_option("-s", "--sample-rate", type="float", default=10e6, help="RX Sample Rate [default=%default]")
     parser.add_option("", "--record", action="store_true", default=False, help="Record IQ data to file (iq_recording.dat)")
     parser.add_option("", "--playback", action="store_true", default=False, help="Playback IQ data from file (iq_recording.dat)")
