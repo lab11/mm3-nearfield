@@ -71,7 +71,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	set_alignment(std::max(1, alignment_multiple));
 
 	// variables
-	threshold = 8;            // threshold set after observing data
+	threshold = 4;            // threshold set after observing data
 	setSampleRate(sample_rate);
 	setPulseLen(pulse_len);
 	setPulseLenAccuracy(pulse_len_accuracy);
@@ -177,7 +177,7 @@ nearfield_demod_impl::nearfield_demod_impl(float sample_rate, float bitrate, flo
 	pulse_vec.clear();
 	prf_vec.clear();
 	demod_data.clear();
-	noise_power = 0;
+	noise_power = 0.5;
     for (int k = 0; k < 100; k++ ) {
         lastpulses.push(0);
 	}
@@ -915,6 +915,9 @@ int nearfield_demod_impl::work(int noutput_items,
 
     		sub_sample_counter = 0;
 	    	current = max_current;
+	    	noise_power = 0.001*max_current + 0.999*noise_power;
+		//std::cout << "noise: " << noise_power << std::endl;
+	    	//noise_power = 0;
 	    	//current = avg_current/subsample_rate;
 		    max_current = 0;
 		//std::cout << current << std::endl;
@@ -1051,7 +1054,7 @@ int nearfield_demod_impl::work(int noutput_items,
             }
 
             //if(sync == 0) {
-            if(start == 1 && max_header_response > threshold) {
+            if(start == 1 && max_header_response > (threshold + (noise_power * 16))) {
                 if(sync == 0) {
                     if(max_header_response > last_max_response) {
                         last_max_response = max_header_response;
