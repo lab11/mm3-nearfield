@@ -1,6 +1,7 @@
 clear all;
 
 raw = gr_read_complex_binary('../calibrate.dat');
+%raw = gr_read_complex_binary('../20160110_garylab.dat');
 data = raw;
 
 figure(1);
