@@ -486,7 +486,8 @@ float nearfield_demod_impl::getLastObservedBitrate(){
 }
 
 float nearfield_demod_impl::getLastObservedPulseLen(){
-	return last_pulse;
+	//return last_pulse;
+	return noise_power;
 }
 
 float nearfield_demod_impl::getThreshold(){

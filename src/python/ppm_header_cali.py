@@ -246,11 +246,11 @@ class my_top_block(grc_wxgui.top_block_gui):
         obs_pl = self.tm_framer.getLastObservedPulseLen()
         pl_fmt = '%.3e' % obs_pl
         if (obs_pl < self._pulse_len*(1-self._pulse_len_accuracy/100)):
-            self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt + '  (TOO LOW)')
+            self.pulse_len_text.set_value('Noise Level: ' + pl_fmt + '  (TOO LOW)')
         elif (obs_pl > self._pulse_len*(1+self._pulse_len_accuracy/100)):
-            self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt + '  (TOO HIGH)')
+            self.pulse_len_text.set_value('Noise Level: ' + pl_fmt + '  (TOO HIGH)')
         else:
-            self.pulse_len_text.set_value('Last Observed Pulse Length: ' + pl_fmt)
+            self.pulse_len_text.set_value('Noise Level: ' + pl_fmt)
 
         obs_thr = self.tm_framer.getThreshold()
         thr_fmt = '%.3e' % obs_thr
