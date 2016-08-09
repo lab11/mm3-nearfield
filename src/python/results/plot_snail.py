@@ -69,10 +69,29 @@ wr.writerow(['DATE','TIME','BAT','LUX','TEMP'])
 for row in rows:
 	wr.writerow(row)
 
-fig1 = plt.figure()
+# Generate Plots using MatLab
 
-plt.plot(range(1,len(batt_int)+1),list(reversed(batt_int)))
-plt.ylabel('BATT')
+len_batt_int = len(batt_int)+1
+len_lux_int = len(lux_int)+1
+len_temp_int = len(temp_int)+1
+
+fig = plt.figure()
+
+plt.subplot(3,1,1)
+plt.title('Stack Testing Results for Snail Project')
+plt.plot(range(1,len_batt_int),list(reversed(batt_int)),'+-')
+plt.ylabel('Battery Voltage')
+plt.xlabel('Time (pts)')
+
+plt.subplot(3,1,2)
+plt.plot(range(1,len_lux_int),list(reversed(lux_int)),'+-')
+plt.ylabel('Light Intensity')
+plt.xlabel('Time (pts)')
+
+
+plt.subplot(3,1,3)
+plt.plot(range(1,len_temp_int),list(reversed(temp_int)),'+-')
+plt.ylabel('Temperature')
 plt.xlabel('Time (pts)')
 
 plt.show()
