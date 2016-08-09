@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # Python script to parse Snail code radio output
 # Looks for transmissions of Temp, VBAT, and Light measurement data
+# 8/9/2016 Inhee - two 24-bit data
 # 7/14/2016 Gyouho Kim
 
 import sys
@@ -33,12 +34,11 @@ for line in lines:
 		data = line.strip()
 		data = data.replace(',','')
 		data = data.replace(' ','')
-		if (i%3 == 1):
+		if (i%2 == 1):
+			batt_int.append(int(data,2) >> 16)
+			temp_int.append(int(data,2) & 0x00FFFF)
+		elif (i%2 == 0):
 			lux_int.append(int(data,2))
-		elif (i%3 == 2):
-			temp_int.append(int(data,2))
-		elif (i%3 == 0):
-			batt_int.append(int(data,2))
 			
 			timestamp_split = lines[j-2].split()
 			time.append(timestamp_split[3])
