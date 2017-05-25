@@ -3,7 +3,7 @@
 # Looks for transmissions of Temp, VBAT, and Light measurement data
 # 8/9/2016 Inhee - two 24-bit data
 # 7/14/2016 Gyouho Kim
-# 11/
+# 5/25/2017 Gyouho Kim - adding A0 as the data header
 
 import sys
 import csv
@@ -34,12 +34,14 @@ for line in lines:
 		data = line.strip()
 		data = data.replace(',','')
 		data = data.replace(' ','')
-		temp_int.append(int(data,2) & 0x00FFFF)
-		timestamp_split = lines[j-2].split()
-		time.append(timestamp_split[3])
-		date.append(timestamp_split[1] + " " + timestamp_split[2])
-
-		i += 1 # data index
+		data_header = (int(data,2) & 0xFF0000)>>16
+		print(data_header)
+		if data_header == 0xA0:
+			temp_int.append(int(data,2) & 0x00FFFF)
+			timestamp_split = lines[j-2].split()
+			time.append(timestamp_split[3])
+			date.append(timestamp_split[1] + " " + timestamp_split[2])
+			i += 1 # data index
 	j += 1 # line index
 
 #for i in range(0,min(len(batt_int),len(lux_int))):
