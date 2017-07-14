@@ -4,7 +4,7 @@ i = 1;
 last_max = 0;
 peak(1) = 0;
 m = [];
-threshold = 0.7;
+threshold = 0.3;
 
 
     for n = 1: length(C)
